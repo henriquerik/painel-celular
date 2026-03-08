@@ -103,8 +103,6 @@
         <div id="listaEstoque"></div>
     </div>
 
-    <script src="banco.js"></script>
-    
     <script>
         var paletaExpandida = false;
 
@@ -139,6 +137,9 @@
             carregarBanco();
             construirMenu('estoque');
             
+            // 🛡️ BLINDAGEM CONTRA BANCO DE DADOS ANTIGO (Evita o travamento)
+            if (!db.estoque) db.estoque = [];
+            if (!db.financas) db.financas = [];
             if (!Array.isArray(db.marcas) || db.marcas.length === 0) {
                 db.marcas = ["Voolt 3D", "3D Prime", "Esun"];
             }
@@ -151,12 +152,22 @@
             renderMarcas();
             construirHTMLPaleta();
             renderEstoque();
+
+            // Atualiza a tela de novo caso o Firebase puxe os dados alguns milissegundos depois
+            setTimeout(function() {
+                if (!db.estoque) db.estoque = [];
+                if (!db.financas) db.financas = [];
+                if (!Array.isArray(db.marcas) || db.marcas.length === 0) db.marcas = ["Voolt 3D", "3D Prime", "Esun"];
+                renderMarcas();
+                renderEstoque();
+            }, 1000);
         };
 
         // ==========================================
         // GESTÃO DE MARCAS (FABRICANTES)
         // ==========================================
         function renderMarcas() {
+            if (!db.marcas) return;
             var html = "";
             for (var i = 0; i < db.marcas.length; i++) {
                 html += `<div class="chip" onclick="selecionarMarca('${db.marcas[i]}')">${db.marcas[i]} <span style="color:var(--danger); font-weight:bold; margin-left:4px;" onclick="deletarMarca(event, ${i})">×</span></div>`;
@@ -176,7 +187,7 @@
         }
 
         function deletarMarca(e, i) {
-            e.stopPropagation(); // Impede de selecionar a marca ao tentar apagar
+            e.stopPropagation(); 
             db.marcas.splice(i, 1);
             salvarBanco();
             renderMarcas();
@@ -197,9 +208,7 @@
             if (btnF) { btnF.classList.add('active-tipo'); }
         }
 
-        function atualizarHexOculto() {
-            // Apenas para manter compatibilidade, caso você mude o color picker manualmente
-        }
+        function atualizarHexOculto() {}
 
         function selecionarCorPaleta(hex, nome) {
             document.getElementById('e-cor-picker').value = hex;
@@ -237,6 +246,10 @@
         // ADICIONAR E EDITAR NO ESTOQUE
         // ==========================================
         function salvarEstoque() {
+            // Mais uma garantia antes de salvar
+            if (!db.estoque) db.estoque = [];
+            if (!db.financas) db.financas = [];
+
             var marca = document.getElementById('m_marca').value;
             var corHex = document.getElementById('e-cor-picker').value;
             var corTexto = document.getElementById('e-cor-texto').value || "Cor Personalizada";
@@ -301,6 +314,7 @@
         }
 
         function editarEstoque(id) {
+            if (!db.estoque) return;
             var f = db.estoque.find(function(x) { return String(x.id) === String(id); }); 
             if(!f) return;
             
@@ -355,6 +369,7 @@
         // RENDERIZAR A LISTA DE ESTOQUE
         // ==========================================
         function renderEstoque() {
+            if (!db.estoque) return; // Segurança extra
             var vT = 0; 
             var htmlEstoque = "";
             
