@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Pedidos Online | Rik 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .pedido-card { background: var(--card); padding: 15px; border-radius: 8px; border-left: 5px solid var(--warn); margin-bottom: 15px; position: relative; }
+        .pedido-card.lido { border-left-color: #555; opacity: 0.8; }
+        .pedido-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .pedido-cliente { font-size: 1.2em; font-weight: bold; color: var(--primary); }
+        .pedido-data { font-size: 0.8em; color: #858585; }
+        .pedido-detalhes { background: var(--bg); padding: 10px; border-radius: 4px; margin: 10px 0; border: 1px solid var(--border); }
+        .badge-novo { background: var(--danger); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+    </style>
+</head>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+<script src="banco.js"></script>
+<body>
+    <div id="menu-container"></div>
+
+    <div class="aba ativa">
+        <h2 style="color:var(--primary); margin-top:0;">🚀 PEDIDOS DA VITRINE ONLINE</h2>
+        <p style="font-size: 12px; color: #858585; margin-bottom: 20px;">Pedidos feitos pelos clientes através do seu catálogo online.</p>
+
+        <div id="lista-pedidos-online">
+            <p style="text-align:center; padding:40px; color:#858585;">Conectando ao Firebase...</p>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+    <script src="banco.js"></script>
+
+    <script>
+        // Inicializa o Firebase com suas chaves
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        window.onload = function() {
+            carregarBanco();
+            construirMenu('pedidos'); // Note: Adicionei 'pedidos' ao menu no banco.js se necessário
+            escutarPedidos();
+        };
+
+        function escutarPedidos() {
+            const pedidosRef = firebase.database().ref('pedidos_online');
+            
+            // "on value" mantém a lista atualizada em tempo real
+            pedidosRef.on('value', (snapshot) => {
+                const pedidos = snapshot.val();
+                renderPedidos(pedidos);
+            });
+        }
+
+        function renderPedidos(pedidosObj) {
+            const container = document.getElementById('lista-pedidos-online');
+            let html = "";
+
+            if (!pedidosObj) {
+                container.innerHTML = "<p style='text-align:center; padding:40px; color:#858585;'>Nenhum pedido online recebido ainda.</p>";
+                return;
+            }
+
+            // Transforma o objeto em array e inverte para o mais novo vir primeiro
+            const keys = Object.keys(pedidosObj).reverse();
+
+            keys.forEach(key => {
+                const p = pedidosObj[key];
+                const statusNovo = !p.lido ? '<span class="badge-novo">NOVO</span>' : '';
+                const classeLido = p.lido ? 'lido' : '';
+
+                html += `
+                    <div class="pedido-card ${classeLido}" id="card-${key}">
+                        <div class="pedido-header">
+                            <div>
+                                <div class="pedido-cliente">${p.cliente} ${statusNovo}</div>
+                                <div class="pedido-data">📅 ${p.data}</div>
+                            </div>
+                            <div style="display:flex; gap:5px;">
+                                ${!p.lido ? `<button class="btn-salvar" style="padding:5px 10px; font-size:10px; margin:0;" onclick="marcarComoLido('${key}')">✔ MARCAR LIDO</button>` : ''}
+                                <button class="btn-del" style="padding:5px 10px; margin:0;" onclick="apagarPedidoOnline('${key}')">X</button>
+                            </div>
+                        </div>
+                        
+                        <div class="pedido-detalhes">
+                            <b>Produto:</b> ${p.produto}<br>
+                            <b>Valor Sugerido:</b> R$ ${parseFloat(p.valor).toFixed(2)}
+                        </div>
+
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn-limpar" style="flex:1; margin:0; font-size:11px; padding:8px;" onclick="copiarParaProducao('${p.produto}')">🛠️ ENVIAR PARA PRODUÇÃO</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function marcarComoLido(id) {
+            firebase.database().ref('pedidos_online/' + id).update({
+                lido: true
+            });
+            mostrarToast("Pedido marcado como conferido!");
+        }
+
+        function apagarPedidoOnline(id) {
+            if(confirm("Deseja remover este pedido da lista online?")) {
+                firebase.database().ref('pedidos_online/' + id).remove();
+                mostrarToast("Pedido removido.");
+            }
+        }
+
+        function copiarParaProducao(nomeProduto) {
+            // Salva o nome do produto no localStorage e pula para a calculadora
+            localStorage.setItem('rik3d_atalho_producao', nomeProduto);
+            alert("Produto '" + nomeProduto + "' selecionado. Vamos para a calculadora preparar a impressão!");
+            window.location.href = 'calc.html';
+        }
+    </script>
+</body>
+</html>

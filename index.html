@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo | Rik 3D Studio</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --primary: #007acc; --dark: #121212; --card: #1e1e1e; --warn: #f1c40f; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--dark); color: white; margin: 0; padding-bottom: 50px; }
+        header { background: var(--card); padding: 20px; text-align: center; border-bottom: 3px solid var(--primary); }
+        .vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 15px; }
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #333; display: flex; flex-direction: column; }
+        .card img { width: 100%; height: 160px; object-fit: cover; background: #252525; }
+        .p-info { padding: 12px; flex-grow: 1; }
+        .p-nome { font-weight: bold; font-size: 14px; color: #eee; height: 34px; overflow: hidden; }
+        .p-preco { font-size: 20px; font-weight: bold; margin-top: 5px; }
+        .preco-varejo { color: var(--primary); }
+        .preco-atacado { color: var(--warn); }
+        .badge-atacado { background: var(--warn); color: black; font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin-bottom: 5px; }
+        .btn-pedir { color: white; border: none; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-varejo { background: var(--primary); }
+        .btn-atacado { background: var(--warn); color: black; }
+        
+        /* Modal do Checkout */
+        .modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; overflow-y: auto; }
+        .modal-content { background:var(--card); padding:20px; border-radius:10px; width:90%; max-width:400px; border:1px solid #444; margin: 20px 0; max-height: 90vh; overflow-y: auto; }
+        input { width:100%; padding:10px; margin:5px 0 10px 0; border-radius:5px; border:1px solid #555; background:#252525; color:white; box-sizing:border-box; font-family: inherit; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .pix-box { background: #252525; padding: 15px; border-radius: 8px; text-align: center; border: 1px dashed var(--primary); margin: 15px 0; }
+        .total-destaque { font-size: 24px; color: #25D366; font-weight: bold; margin: 10px 0; }
+        label { font-size: 12px; color: #ccc; }
+    </style>
+</head>
+<body>
+
+    <header id="header-loja">
+        <h1 style="margin:0; letter-spacing: 1px;">RIK 3D STUDIO</h1>
+        <p style="font-size:12px; opacity:0.6; margin-top:5px;" id="sub-header">Carregando catálogo...</p>
+    </header>
+
+    <div class="vitrine" id="lista-vitrine"></div>
+
+    <div id="modalPedido" class="modal">
+        <div class="modal-content">
+            
+            <div id="step-1" class="step active">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0; color:var(--primary);" id="modal-titulo">Finalizar Pedido</h3>
+                    <button onclick="fecharModal()" style="background:transparent; border:none; color:#888; font-size:20px; cursor:pointer;">&times;</button>
+                </div>
+                <p style="font-size:11px; color:#888; margin-bottom:15px; margin-top:5px;">Preencha seus dados para entrega e contato.</p>
+                
+                <label>Nome Completo / Loja:</label>
+                <input type="text" id="c-nome" placeholder="Seu nome">
+                
+                <div id="campo-cnpj" style="display:none;">
+                    <label>CNPJ:</label>
+                    <input type="text" id="c-cnpj" placeholder="00.000.000/0000-00">
+                </div>
+
+                <label>WhatsApp (com DDD):</label>
+                <input type="number" id="c-whats" placeholder="Ex: 11999999999">
+
+                <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #333; margin-top: 5px;">
+                    <label style="color:var(--primary); font-weight:bold;">Endereço de Entrega:</label>
+                    
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <div style="flex:1;">
+                            <label>CEP:</label>
+                            <input type="text" id="c-cep" placeholder="00000-000" onblur="buscarCEP(this.value)" maxlength="9">
+                        </div>
+                        <div style="flex:2;">
+                            <label>Bairro:</label>
+                            <input type="text" id="c-bairro" placeholder="Bairro">
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:3;">
+                            <label>Rua / Avenida:</label>
+                            <input type="text" id="c-rua" placeholder="Nome da rua">
+                        </div>
+                        <div style="flex:1;">
+                            <label>Nº:</label>
+                            <input type="text" id="c-numero" placeholder="123">
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:3;">
+                            <label>Cidade:</label>
+                            <input type="text" id="c-cidade" placeholder="Cidade">
+                        </div>
+                        <div style="flex:1;">
+                            <label>UF:</label>
+                            <input type="text" id="c-estado" placeholder="SP" maxlength="2" style="text-transform: uppercase;">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:15px; align-items:center; background:#252525; padding:10px; border-radius:8px;">
+                    <div style="flex:1;">
+                        <label>Quantidade:</label>
+                        <input type="number" id="c-qtd" value="1" oninput="calcularTotal()" style="margin:0;">
+                    </div>
+                    <div style="flex:1; text-align:right;">
+                        <small style="color:#aaa;">Total a Pagar:</small><br>
+                        <strong id="display-total" style="font-size:20px; color:var(--primary);">R$ 0,00</strong>
+                    </div>
+                </div>
+                <small id="aviso-minimo" style="color:var(--warn); display:none; font-weight:bold; margin-top:5px;">Mínimo para atacado: <span id="qtd-min-val"></span> peças</small>
+
+                <button class="btn-pedir btn-varejo" style="margin-top:20px;" onclick="irParaPagamento()">IR PARA PAGAMENTO ➔</button>
+            </div>
+
+            <div id="step-2" class="step">
+                <h3 style="margin-top:0; color:#25D366;">Pagamento via PIX</h3>
+                <p style="font-size:12px; color:#aaa;">Transfira o valor exato abaixo para confirmar seu pedido.</p>
+                
+                <div class="pix-box">
+                    <div style="font-size:12px; color:#aaa;">Valor Total</div>
+                    <div class="total-destaque" id="pix-valor">R$ 0,00</div>
+                    
+                    <div style="font-size:12px; color:#aaa; margin-top:10px;">Chave PIX (Copie abaixo)</div>
+                    <input type="text" id="chave-pix-copia" readonly style="text-align:center; font-weight:bold; font-size:16px; color:var(--primary); margin-top:5px;">
+                    <button onclick="copiarPix()" style="background:#333; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; width:100%; margin-top:5px; font-weight:bold;">📋 COPIAR CHAVE PIX</button>
+                </div>
+
+                <button class="btn-pedir" style="background:#25D366; margin-top:10px;" onclick="finalizarPedido()">✅ JÁ PAGUEI / ENVIAR COMPROVANTE</button>
+                <button class="btn-pedir" style="background:#444; margin-top:10px;" onclick="voltarPasso()">⬅ VOLTAR PARA EDIÇÃO</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // ⚙️ CONFIGURAÇÕES DA SUA LOJA
+        // ==========================================
+        const MINHA_CHAVE_PIX = "SUA_CHAVE_PIX_AQUI"; // <-- COLOQUE SEU CPF/CELULAR/EMAIL AQUI
+        const MEU_NUMERO_WHATSAPP = "5511999999999"; // <-- COLOQUE SEU WHATSAPP AQUI (Com 55 e DDD)
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAYF8Deb-EElNATv_j-S-TEI_mrlFLpTos",
+            authDomain: "rik-3d-epr.firebaseapp.com",
+            databaseURL: "https://rik-3d-epr-default-rtdb.firebaseio.com",
+            projectId: "rik-3d-epr",
+            appId: "1:331521054701:web:d794daaa1bdca3e0ecb9e4"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const isAtacado = urlParams.get('ref') === 'lojista' || urlParams.get('tipo') === 'atacado';
+
+        let prodSelecionado = {};
+        let valorUnitarioAtual = 0;
+        let valorTotalAtual = 0;
+        let enderecoFormatadoGlobal = ""; // Guarda o endereço montadinho
+
+        if (isAtacado) {
+            document.documentElement.style.setProperty('--primary', '#f1c40f');
+            document.getElementById('sub-header').innerText = "Área Exclusiva para Lojistas (Atacado)";
+        } else {
+            document.getElementById('sub-header').innerText = "Catálogo Oficial de Produtos";
+        }
+
+        const dbRef = firebase.database().ref('vitrine/produtos');
+        dbRef.on('value', (snapshot) => {
+            const produtos = snapshot.val();
+            const container = document.getElementById('lista-vitrine');
+            let html = "";
+
+            if (produtos) {
+                produtos.forEach((p) => {
+                    if(!p.precoVenda) return; 
+
+                    let precoDisplay = "";
+                    let btnClass = "";
+                    let qtdMinima = p.qtdAtacado || 10;
+
+                    if (isAtacado) {
+                        precoDisplay = `<div class="badge-atacado">ATACADO (Mín. ${qtdMinima} un)</div>
+                                        <div class="p-preco preco-atacado">R$ ${parseFloat(p.precoAtacado).toFixed(2)}</div>`;
+                        btnClass = "btn-atacado";
+                    } else {
+                        precoDisplay = `<div class="p-preco preco-varejo">R$ ${parseFloat(p.precoVenda).toFixed(2)}</div>`;
+                        btnClass = "btn-varejo";
+                    }
+
+                    let prodJson = encodeURIComponent(JSON.stringify(p));
+
+                    html += `
+                        <div class="card">
+                            <img src="${p.imagem || 'https://via.placeholder.com/200?text=Rik+3D'}">
+                            <div class="p-info">
+                                <div class="p-nome">${p.nome}</div>
+                                ${precoDisplay}
+                            </div>
+                            <button class="btn-pedir ${btnClass}" onclick="abrirModal('${prodJson}')">COMPRAR</button>
+                        </div>
+                    `;
+                });
+            }
+            container.innerHTML = html || "<p style='text-align:center; grid-column: 1/-1;'>Nenhum produto disponível.</p>";
+        });
+
+        // ==========================================
+        // MÁGICA DO CEP (ViaCEP)
+        // ==========================================
+        function buscarCEP(cep) {
+            let cepLimpo = cep.replace(/\D/g, ''); // Tira o traço
+            if (cepLimpo.length === 8) {
+                fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`)
+                .then(res => res.json())
+                .then(data => {
+                    if(!data.erro) {
+                        document.getElementById('c-rua').value = data.logradouro;
+                        document.getElementById('c-bairro').value = data.bairro;
+                        document.getElementById('c-cidade').value = data.localidade;
+                        document.getElementById('c-estado').value = data.uf;
+                        // Joga o cursor direto pro campo do número pra facilitar
+                        document.getElementById('c-numero').focus();
+                    } else {
+                        alert("CEP não encontrado. Digite o endereço manualmente.");
+                    }
+                }).catch(err => console.log("Erro ao buscar CEP"));
+            }
+        }
+
+        function abrirModal(prodJsonEncoded) {
+            prodSelecionado = JSON.parse(decodeURIComponent(prodJsonEncoded));
+            
+            if (isAtacado) {
+                document.getElementById('campo-cnpj').style.display = 'block';
+                valorUnitarioAtual = parseFloat(prodSelecionado.precoAtacado);
+                document.getElementById('c-qtd').min = prodSelecionado.qtdAtacado || 10;
+                document.getElementById('c-qtd').value = prodSelecionado.qtdAtacado || 10;
+                document.getElementById('aviso-minimo').style.display = 'block';
+                document.getElementById('qtd-min-val').innerText = prodSelecionado.qtdAtacado || 10;
+            } else {
+                document.getElementById('campo-cnpj').style.display = 'none';
+                valorUnitarioAtual = parseFloat(prodSelecionado.precoVenda);
+                document.getElementById('c-qtd').min = 1;
+                document.getElementById('c-qtd').value = 1;
+                document.getElementById('aviso-minimo').style.display = 'none';
+            }
+
+            document.getElementById('chave-pix-copia').value = MINHA_CHAVE_PIX;
+            calcularTotal();
+
+            document.getElementById('step-1').className = 'step active';
+            document.getElementById('step-2').className = 'step';
+            document.getElementById('modalPedido').style.display = 'flex';
+        }
+
+        function calcularTotal() {
+            let qtd = parseInt(document.getElementById('c-qtd').value) || 1;
+            
+            if (isAtacado && qtd < (prodSelecionado.qtdAtacado || 10)) {
+                qtd = prodSelecionado.qtdAtacado || 10;
+            } else if (!isAtacado && qtd < 1) {
+                qtd = 1;
+            }
+
+            valorTotalAtual = qtd * valorUnitarioAtual;
+            document.getElementById('display-total').innerText = `R$ ${valorTotalAtual.toFixed(2)}`;
+            document.getElementById('pix-valor').innerText = `R$ ${valorTotalAtual.toFixed(2)}`;
+        }
+
+        function irParaPagamento() {
+            const nome = document.getElementById('c-nome').value.trim();
+            const whats = document.getElementById('c-whats').value.trim();
+            
+            // Pega os campos de endereço separados
+            const cep = document.getElementById('c-cep').value.trim();
+            const rua = document.getElementById('c-rua').value.trim();
+            const num = document.getElementById('c-numero').value.trim();
+            const bairro = document.getElementById('c-bairro').value.trim();
+            const cidade = document.getElementById('c-cidade').value.trim();
+            const uf = document.getElementById('c-estado').value.trim();
+            
+            if (!nome || !whats || !rua || !num || !cidade || !uf) {
+                alert("Por favor, preencha o seu Nome, WhatsApp e todos os dados do Endereço (Rua, Nº, Cidade, UF) para continuar.");
+                return;
+            }
+            
+            if (isAtacado && !document.getElementById('c-cnpj').value.trim()) {
+                alert("Lojista, por favor informe seu CNPJ.");
+                return;
+            }
+
+            // Monta o endereço bonitinho numa frase só para salvar no banco e no WhatsApp
+            enderecoFormatadoGlobal = `${rua}, ${num} - ${bairro}. ${cidade}/${uf.toUpperCase()} - CEP: ${cep}`;
+
+            calcularTotal();
+            document.getElementById('step-1').className = 'step';
+            document.getElementById('step-2').className = 'step active';
+        }
+
+        function voltarPasso() {
+            document.getElementById('step-2').className = 'step';
+            document.getElementById('step-1').className = 'step active';
+        }
+
+        function fecharModal() {
+            document.getElementById('modalPedido').style.display = 'none';
+        }
+
+        function copiarPix() {
+            const input = document.getElementById('chave-pix-copia');
+            input.select();
+            document.execCommand("copy");
+            alert("Chave PIX copiada! Abra o app do seu banco para pagar.");
+        }
+
+        function finalizarPedido() {
+            const clienteDados = {
+                nome: document.getElementById('c-nome').value.trim(),
+                cnpj: document.getElementById('c-cnpj').value.trim(),
+                whatsapp: document.getElementById('c-whats').value.trim(),
+                endereco: enderecoFormatadoGlobal, // Usa a frase que montamos
+                tipo: isAtacado ? 'Atacado (Lojista)' : 'Varejo',
+                dataCadastro: new Date().toLocaleString()
+            };
+
+            const pedidoDados = {
+                cliente: clienteDados.nome,
+                produto: prodSelecionado.nome,
+                qtd: document.getElementById('c-qtd').value,
+                valorTotal: valorTotalAtual,
+                tipoVenda: clienteDados.tipo,
+                endereco: clienteDados.endereco,
+                data: new Date().toLocaleString(),
+                lido: false
+            };
+
+            firebase.database().ref('pedidos_online').push(pedidoDados);
+            firebase.database().ref('clientes_online').push(clienteDados);
+
+            let msg = `*NOVO PEDIDO (Via Catálogo)* 🛍️\n\n`;
+            msg += `*Cliente:* ${clienteDados.nome}\n`;
+            if(isAtacado) msg += `*CNPJ:* ${clienteDados.cnpj}\n`;
+            msg += `*WhatsApp:* ${clienteDados.whatsapp}\n`;
+            msg += `*Endereço:* ${clienteDados.endereco}\n\n`;
+            msg += `*Produto:* ${prodSelecionado.nome}\n`;
+            msg += `*Quantidade:* ${pedidoDados.qtd} unidades\n`;
+            msg += `*Valor Total:* R$ ${valorTotalAtual.toFixed(2)}\n\n`;
+            msg += `_Já realizei o pagamento via PIX, segue o comprovante:_`;
+
+            const linkWhats = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+            
+            fecharModal();
+            window.open(linkWhats, '_blank');
+        }
+    </script>
+</body>
+</html>

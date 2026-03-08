@@ -1,0 +1,38 @@
+:root { 
+    --primary: #007acc; --bg: #1e1e1e; --card: #252526; 
+    --input: #333333; --text: #cccccc; --danger: #f14c4c; 
+    --warn: #cca700; --border: #3e3e42;
+}
+
+body { font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; font-size: 13px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #424242; }
+::-webkit-scrollbar-thumb:hover { background: #4f4f4f; }
+
+.top-bar { display: flex; justify-content: space-between; align-items: center; background: #323233; padding: 10px 15px; margin: -10px -10px 15px -10px; border-bottom: 1px solid #111; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.top-bar b { color: #ffffff; text-transform: uppercase; font-size: 14px; }
+.font-controls button { background: #3e3e42; color: #fff; border: 1px solid #555; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-weight: bold; }
+
+.menu { display: flex; gap: 2px; margin-bottom: 20px; background: #2d2d30; padding: 0; overflow-x: auto; }
+.menu button { flex: 1; padding: 12px 15px; border: none; background: #2d2d30; color: #969696; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; }
+.menu button:hover { color: #fff; }
+.menu button.active { background: var(--bg); color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+label { display: block; font-size: 11px; color: #858585; font-weight: bold; margin-bottom: 4px; text-transform: uppercase; }
+input, select, textarea { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #555; background: var(--input); color: var(--text); box-sizing: border-box; margin-bottom: 10px; }
+input:focus, textarea:focus { border-color: var(--primary); outline: none; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; }
+
+.card-item { background: var(--card); padding: 15px; margin-top: 10px; border-radius: 4px; border: 1px solid var(--border); border-left: 4px solid var(--primary); }
+.box-info { background: var(--card); padding: 12px; border-radius: 4px; text-align: center; border: 1px solid var(--border); }
+.box-info b { font-size: 14px; display: block; color: var(--primary); margin-top: 4px; }
+
+.btn-salvar { background: var(--primary); color: #ffffff; font-weight: bold; border: none; padding: 12px; width: 100%; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
+.btn-limpar { background: transparent; color: #cccccc; border: 1px solid #555; padding: 12px; width: 100%; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
+.btn-del { background: #5c1b1b; border: 1px solid #7c2424; color: #fff; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;}
+
+.toast { visibility: hidden; min-width: 250px; background-color: var(--primary); color: #fff; text-align: center; border-radius: 4px; padding: 15px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; font-weight: bold; transform: translateX(-50%); }
+.toast.show { visibility: visible; }

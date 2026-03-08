@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora Rik 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .img-input-area { border: 2px dashed #555; background: var(--card); border-radius: 4px; padding: 15px; text-align: center; color: var(--primary); cursor: pointer; position: relative; font-weight: bold;}
+        .img-input-area input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; left: 0; top: 0; }
+        .img-area-preview { width: 100%; height: 150px; border-radius: 4px; object-fit: cover; display: none; }
+        .slot-ams { background: rgba(0,0,0,0.1); border-radius: 4px; margin-bottom: 8px; padding: 10px; border-left: 3px solid var(--primary); }
+        .color-indicator { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-left: 5px; border: 1px solid #555; vertical-align: middle; }
+        .detalhes-custo { background: var(--card); padding: 15px; border-radius: 4px; margin: 15px 0; border: 1px solid var(--border); }
+        .linha-custo { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+        .res-venda { background: var(--card); border: 1px solid var(--primary); padding: 15px; border-radius: 4px; text-align: center; margin-top: 15px; }
+        .chip { background: var(--input); padding: 8px 12px; border-radius: 15px; font-size: 11px; cursor: pointer; border: 1px solid var(--border); display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <div id="menu-container"></div>
+
+    <div id="aba-calc" class="aba ativa">
+        <input type="hidden" id="edit-prod-id" value="">
+        
+        <div style="background: rgba(0, 122, 204, 0.05); border: 2px dashed var(--primary); padding: 15px; border-radius: 4px; text-align: center; margin-bottom: 20px;">
+            <h3 style="margin-top:0; margin-bottom:10px; color: var(--primary);">🤖 AUTO-PREENCHER (FATIADOR)</h3>
+            <p style="color: #858585; font-size:11px; margin-bottom:10px;">Vá ao seu fatiador, selecione o texto de resumo (Horas e Peso), copie e cole na caixa abaixo:</p>
+            <input type="text" id="leitor-fatiador" placeholder="Cole o texto aqui (Ex: 1h 30m 45g)" oninput="processarTextoFatiador(this.value)" style="text-align:center; font-weight:bold; font-size:14px; border-color:var(--primary); color:var(--primary);">
+            <div id="ocr-status" style="display:none; color:var(--warn); font-weight:bold; font-size:12px; margin-top:10px;"></div>
+        </div>
+
+        <div class="grid-2">
+            <div><label>Nome do Produto:</label><input type="text" id="p-nome" placeholder="Ex: Vaso Groot"></div>
+            <div><label>Categoria:</label><input type="text" id="p-categoria" placeholder="Ex: Geek"></div>
+        </div>
+        
+        <div id="tags-categorias-rapidas" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;"></div>
+        
+        <div style="margin-top: 10px;">
+            <label>Descrição para a Loja:</label>
+            <textarea id="p-desc" placeholder="Tamanho, cuidados com a peça..."></textarea>
+            <button onclick="gerarDescricaoBasica()" class="btn-limpar" style="padding:8px; font-size:11px; margin-top:5px;">⚡ GERAR TEXTO BÁSICO</button>
+        </div>
+
+        <div class="img-input-area" style="margin-top: 15px;">
+            <span id="p-img-text">➕ CLIQUE PARA ADICIONAR FOTO DA PEÇA</span>
+            <input type="file" id="p-img-file" accept="image/*" onchange="previewImage(this)">
+            <img id="p-img-prev" class="img-area-preview">
+        </div>
+        
+        <fieldset style="border: 1px solid var(--border); border-radius: 4px; margin-top: 15px; padding: 15px;">
+            <legend style="color: var(--primary); font-size: 11px; font-weight: bold; text-transform: uppercase; padding: 0 5px;">Filamentos Utilizados</legend>
+            <div id="materiais-area"></div>
+            <button class="btn-limpar" onclick="addSlotAMS()" style="margin-top:10px; border-style:dashed;">+ ADICIONAR COR (MULTICOLOR)</button>
+        </fieldset>
+
+        <fieldset style="border: 1px solid var(--border); border-radius: 4px; margin-top: 15px; padding: 15px;">
+            <legend style="color: var(--primary); font-size: 11px; font-weight: bold; text-transform: uppercase; padding: 0 5px;">Gastos Operacionais</legend>
+            <div class="grid-4">
+                <div><label>Qtd. na Placa:</label><input type="number" id="qtd-plate" value="1" oninput="calc()"></div>
+                <div><label>Horas Totais:</label><input type="number" id="tempo" value="1" oninput="calc()"></div>
+                <div><label>Energia R$/h:</label><input type="number" id="taxa-hora" value="1.11" oninput="salvarConfigsCalculadora()"></div>
+                <div><label>Deprec. R$/h:</label><input type="number" id="depreciacao-hora" value="0.50" oninput="salvarConfigsCalculadora()"></div>
+            </div>
+            <div class="grid-3" style="margin-top: 10px;">
+                <div><label>Seu Tempo (h):</label><input type="number" id="tempo-manual" value="0.5" oninput="calc()"></div>
+                <div><label>Mão Obra R$/h:</label><input type="number" id="valor-mao-obra" value="20.00" oninput="salvarConfigsCalculadora()"></div>
+                <div><label>Caixa/Emb. R$:</label><input type="number" id="custo-embalagem" value="2.00" oninput="salvarConfigsCalculadora()"></div>
+            </div>
+            <div class="grid-2" style="margin-top: 10px; border-top: 1px solid var(--border); padding-top:10px;">
+                <div><label>Taxa E-commerce (%):</label><input type="number" id="taxa-ecom" value="18" oninput="salvarConfigsCalculadora()"></div>
+                <div><label style="color:var(--warn);">Custos Extras R$ (Ímã, Resina):</label><input type="number" id="custo-extra" value="0" oninput="calc()"></div>
+            </div>
+        </fieldset>
+        
+        <div class="grid-2" style="margin-top:15px;">
+            <div><label>Lucro Varejo Desejado (%):</label><input type="number" id="lucro" value="100" oninput="calc()"></div>
+            <div><label>Lucro Atacado Desejado (%):</label><input type="number" id="lucro-atacado" value="60" oninput="calc()"></div>
+        </div>
+
+        <div id="detalhes-finos" class="detalhes-custo">
+            <div class="linha-custo"><span>Custo do Plástico:</span><strong id="c-plast">R$ 0,00</strong></div>
+            <div class="linha-custo"><span>Energia + Máquina:</span><strong id="c-luz">R$ 0,00</strong></div>
+            <div class="linha-custo"><span>Seu Tempo + Embalagem:</span><strong id="c-maodeobra">R$ 0,00</strong></div>
+            <div class="linha-custo" style="color:var(--warn);"><span>Gastos Extras:</span><strong id="c-ext">R$ 0,00</strong></div>
+            <div class="linha-custo"><span>Margem de Falha (10%):</span><strong id="c-seguro">R$ 0,00</strong></div>
+            <div class="linha-custo" style="border-top: 1px dashed #555; padding-top: 8px; margin-top: 8px;">
+                <span>CUSTO UNITÁRIO REAL:</span><strong id="c-final-real" style="font-size:1.2em;">R$ 0,00</strong>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="res-venda" style="border: 1px solid var(--primary);">
+                <small style="color:#858585;">PREÇO VAREJO (Mude p/ ver a %)</small><br>
+                <span style="color:var(--primary); font-size:1.8em; font-weight:bold;">R$ <input type="number" id="venda-text" style="background:transparent; border:none; color:var(--primary); font-size:1em; font-weight:bold; width:150px; padding:0; margin:0; text-align:center;" oninput="calcReverso('varejo')"></span>
+            </div>
+            <div class="res-venda" style="border: 1px solid var(--warn);">
+                <small style="color:#858585;">PREÇO ATACADO (Mude p/ ver a %)</small><br>
+                <span style="color:var(--warn); font-size:1.8em; font-weight:bold;">R$ <input type="number" id="atacado-text" style="background:transparent; border:none; color:var(--warn); font-size:1em; font-weight:bold; width:150px; padding:0; margin:0; text-align:center;" oninput="calcReverso('atacado')"></span>
+            </div>
+        </div>
+        
+        <div style="margin-top:10px;"><label>Quantidade Mínima para preço de Atacado:</label><input type="number" id="qtd-min-atacado" value="10"></div>
+        
+        <div class="grid-2" style="margin-top: 20px;">
+            <button class="btn-salvar" onclick="salvarProduto()" id="btn-salvar-calc">SALVAR NO CATÁLOGO</button>
+            <button class="btn-limpar" onclick="limparCalc()">LIMPAR TUDO</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+    <script src="banco.js"></script>
+    
+    <script>
+        var base64Image = ""; 
+        var slotsAmsCount = 0;
+
+        // Funções de Utilitário locais
+        function safeSet(id, val) { try { var el = document.getElementById(id); if(el && val !== undefined) el.value = val; } catch(e){} }
+        function safeHTML(id, val) { try { var el = document.getElementById(id); if(el && val !== undefined) el.innerHTML = val; } catch(e){} }
+        function safeText(id, val) { try { var el = document.getElementById(id); if(el && val !== undefined) el.innerText = val; } catch(e){} }
+
+        window.onload = function() {
+            carregarBanco(); 
+            construirMenu('calc'); 
+
+            // Carrega as configurações de taxa salvas
+            safeSet('taxa-hora', localStorage.getItem('rik3d_taxa_en') || "1.11");
+            safeSet('depreciacao-hora', localStorage.getItem('rik3d_taxa_de') || "0.50");
+            safeSet('valor-mao-obra', localStorage.getItem('rik3d_val_mao') || "20.00");
+            safeSet('custo-embalagem', localStorage.getItem('rik3d_val_emb') || "2.00");
+            safeSet('taxa-ecom', localStorage.getItem('rik3d_taxa_ecom') || "18");
+
+            iniciarCalculadora();
+            
+            // Verifica se viemos da página Catálogo para editar um produto
+            var idEdit = localStorage.getItem('rik3d_edit_prod_id');
+            if (idEdit) {
+                localStorage.removeItem('rik3d_edit_prod_id'); // Limpa a memória
+                editarProduto(idEdit);
+            }
+        };
+
+        function iniciarCalculadora() { 
+            safeHTML('materiais-area', ''); 
+            slotsAmsCount = 0; 
+            addSlotAMS(); 
+            renderCategoriasRapidas(); 
+        }
+
+        // ==========================================
+        // LEITOR TEXTO DO FATIADOR
+        // ==========================================
+        function processarTextoFatiador(text) {
+            if (!text) return;
+            var statusEl = document.getElementById('ocr-status');
+            if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = "var(--primary)"; }
+            
+            var peso = 0; var horasTotal = 0;
+            var mPeso = text.match(/([\d.,]+)\s*[gG]/); if (mPeso) { peso = parseFloat(mPeso[1].replace(',', '.')); }
+            
+            var mDias = text.match(/([\d]+)\s*[dD]/); var mHoras = text.match(/([\d]+)\s*[hH]/); var mMin = text.match(/([\d]+)\s*[mM]/);
+            var d = mDias ? parseInt(mDias[1]) : 0; var h = mHoras ? parseInt(mHoras[1]) : 0; var m = mMin ? parseInt(mMin[1]) : 0;
+            horasTotal = (d * 24) + h + (m / 60);
+            
+            if (horasTotal > 0 || peso > 0) {
+                if (horasTotal > 0) { safeSet('tempo', horasTotal.toFixed(2)); }
+                if (peso > 0) { var pInputs = document.querySelectorAll('.peso-f'); if(pInputs.length > 0) { pInputs[0].value = peso.toFixed(2); } }
+                calc();
+                if (statusEl) { statusEl.innerText = `✔️ LIDO COM SUCESSO: ${peso.toFixed(1)}g | ${horasTotal.toFixed(2)}h`; }
+                mostrarToast("Dados importados com sucesso!");
+                var inputFatiador = document.getElementById('leitor-fatiador'); if (inputFatiador) { inputFatiador.value = ""; }
+            } else {
+                if (statusEl) { statusEl.innerText = "⚠️ Erro: Formato inválido. Copie do fatiador."; statusEl.style.color = "var(--warn)"; }
+            }
+        }
+
+        // ==========================================
+        // GESTÃO DE ESTOQUE / AMS
+        // ==========================================
+        function addSlotAMS() {
+            try {
+                if(slotsAmsCount >= 10) return;
+                var idx = slotsAmsCount; var div = document.createElement('div'); div.className = 'slot-ams';
+                var innerHtml = `<div style="display: grid; grid-template-columns: 2.5fr 1fr; gap: 8px; align-items: end;"><div><label>Material Slot ${idx+1} <span class="color-indicator" id="ind-cor-${idx}"></span></label><select class="sel-f" id="sel-f-${idx}" onchange="updateInd(${idx})"></select></div><div><label>Peso (g)</label><input type="number" class="peso-f" id="peso-f-${idx}" value="0" oninput="calc()"></div></div>`;
+                div.innerHTML = innerHtml; var area = document.getElementById('materiais-area'); if(area) { area.appendChild(div); slotsAmsCount++; renderFilamentDropdowns(); }
+            } catch(e){}
+        }
+
+        function updateInd(i) {
+            try {
+                var sel = document.getElementById('sel-f-'+i); if(!sel) return;
+                var opt = sel.options[sel.selectedIndex]; if(opt) { var ind = document.getElementById('ind-cor-'+i); if(ind) { ind.style.background = opt.dataset.cor || 'transparent'; } }
+                calc();
+            }catch(e){}
+        }
+
+        function renderFilamentDropdowns() {
+            try {
+                var opts = `<option value="0">Selecione o Filamento...</option>`;
+                for (var i = 0; i < db.estoque.length; i++) {
+                    var f = db.estoque[i]; if (!f) continue;
+                    var pAtual = f.pesoAtual !== undefined ? parseFloat(f.pesoAtual) : (parseFloat(f.pesoOriginal) || 0);
+                    var corStr = String(f.cor || ""); var corHex = corStr.includes('|') ? corStr.split(' | ')[0].trim() : "transparent"; var corNome = corStr.includes('|') ? corStr.split('|')[1].trim() : "Desconhecida";
+                    // Usa o ID como value para salvar
+                    opts += `<option value="${f.id}" data-cor="${corHex}">${String(f.marca || 'Sem Marca')} - ${corNome} (${pAtual.toFixed(0)}g)</option>`;
+                }
+                var sels = document.querySelectorAll('.sel-f');
+                for (var j = 0; j < sels.length; j++) { var val = sels[j].value; sels[j].innerHTML = opts; sels[j].value = val; }
+            } catch(e) {}
+        }
+
+        // ==========================================
+        // CÁLCULO MÁGICO 
+        // ==========================================
+        function calc() {
+            try {
+                var custoPlasticoTotal = 0;
+                var qtdPlateEl = document.getElementById('qtd-plate'); if (!qtdPlateEl) return;
+                var qtdP = parseFloat(qtdPlateEl.value) || 1;
+                var hImp = parseFloat(document.getElementById('tempo').value) || 0; 
+                var tEn = parseFloat(document.getElementById('taxa-hora').value) || 0; 
+                var tDe = parseFloat(document.getElementById('depreciacao-hora').value) || 0; 
+                var tMa = parseFloat(document.getElementById('tempo-manual').value) || 0; 
+                var vMa = parseFloat(document.getElementById('valor-mao-obra').value) || 0; 
+                var cEmb = parseFloat(document.getElementById('custo-embalagem').value) || 0; 
+                var cExtra = parseFloat(document.getElementById('custo-extra').value) || 0;
+                
+                var lVarejo = parseFloat(document.getElementById('lucro').value) || 100; 
+                var lAtac = parseFloat(document.getElementById('lucro-atacado').value) || 60; 
+                var taxaEcom = parseFloat(document.getElementById('taxa-ecom').value) || 0;
+
+                var sels = document.querySelectorAll('.sel-f');
+                for (var i = 0; i < sels.length; i++) {
+                    var sel = sels[i]; var matId = sel.value; var pesoInput = document.getElementById('peso-f-' + i); var pGasto = pesoInput ? parseFloat(pesoInput.value) || 0 : 0;
+                    if (matId !== "0" && pGasto > 0) {
+                        var mat = db.estoque.find(function(e) { return String(e.id) === String(matId); });
+                        if (mat) {
+                            var pOrig = parseFloat(mat.pesoOriginal) || 1000; var valRolo = parseFloat(mat.valor) || 0;
+                            custoPlasticoTotal += (valRolo / pOrig) * pGasto;
+                        }
+                    }
+                }
+
+                var cLuzTotal = hImp * (tEn + tDe);
+                var cMaoObraTotal = tMa * vMa;
+                
+                var cPlastUnidade = custoPlasticoTotal / qtdP;
+                var cLuzUnidade = cLuzTotal / qtdP;
+                var cMaoObraUnidade = cMaoObraTotal / qtdP;
+                var cExtraUnidade = cExtra / qtdP;
+                var cEmbUnidade = cEmb; 
+                
+                var subTotalUnidade = cPlastUnidade + cLuzUnidade + cMaoObraUnidade + cExtraUnidade + cEmbUnidade;
+                var cSeguroUnidade = subTotalUnidade * 0.10; 
+                
+                var custoUnitarioFinal = subTotalUnidade + cSeguroUnidade; 
+                
+                safeText('c-plast', "R$ " + cPlastUnidade.toFixed(2)); 
+                safeText('c-luz', "R$ " + cLuzUnidade.toFixed(2)); 
+                safeText('c-maodeobra', "R$ " + (cMaoObraUnidade + cEmbUnidade).toFixed(2)); 
+                safeText('c-ext', "R$ " + cExtraUnidade.toFixed(2)); 
+                safeText('c-seguro', "R$ " + cSeguroUnidade.toFixed(2));
+                
+                var elBase = document.getElementById('c-final-real');
+                if (elBase) { 
+                    elBase.innerText = "R$ " + custoUnitarioFinal.toFixed(2); 
+                    elBase.setAttribute('data-custobase', custoUnitarioFinal.toFixed(5)); 
+                }
+                
+                var multiplicadorEcom = 1 - (taxaEcom / 100);
+                if (multiplicadorEcom <= 0) multiplicadorEcom = 0.01;
+
+                var precoVenda = (custoUnitarioFinal * (1 + (lVarejo / 100))) / multiplicadorEcom;
+                var precoAtacado = (custoUnitarioFinal * (1 + (lAtac / 100))) / multiplicadorEcom;
+
+                var vt = document.getElementById('venda-text');
+                if (vt && !vt.dataset.manual) { 
+                    vt.value = precoVenda.toFixed(2); 
+                }
+                if(vt) vt.setAttribute('data-custo', custoUnitarioFinal.toFixed(5));
+                
+                var at = document.getElementById('atacado-text');
+                if(at && !at.dataset.manual) {
+                    safeSet('atacado-text', precoAtacado.toFixed(2));
+                }
+
+            } catch(e) {}
+        }
+
+        // Marcar que o campo foi editado à mão
+        document.getElementById('venda-text').addEventListener('input', function(){ this.dataset.manual = "true"; calcReverso('varejo'); });
+        document.getElementById('atacado-text').addEventListener('input', function(){ this.dataset.manual = "true"; calcReverso('atacado'); });
+
+        function calcReverso(tipo) {
+            try {
+                var elBase = document.getElementById('c-final-real'); if (!elBase) return;
+                var custoU = parseFloat(elBase.getAttribute('data-custobase')) || 0; if (custoU <= 0) return;
+                var taxaEcomStr = document.getElementById('taxa-ecom').value; var taxaEcom = parseFloat(taxaEcomStr) || 0; var multEcom = 1 - (taxaEcom / 100);
+                if(multEcom <= 0) multEcom = 0.01;
+
+                if (tipo === 'varejo') {
+                    var vText = document.getElementById('venda-text').value; var precoVenda = parseFloat(vText) || 0; var novaMargem = (((precoVenda * multEcom) / custoU) - 1) * 100; safeSet('lucro', novaMargem.toFixed(1));
+                } else if (tipo === 'atacado') {
+                    var aText = document.getElementById('atacado-text').value; var precoAtacado = parseFloat(aText) || 0; var novaMargemAtacado = (((precoAtacado * multEcom) / custoU) - 1) * 100; safeSet('lucro-atacado', novaMargemAtacado.toFixed(1));
+                }
+            } catch(e) {}
+        }
+
+        function salvarConfigsCalculadora() {
+            try {
+                var elTE = document.getElementById('taxa-hora'); if(elTE) localStorage.setItem('rik3d_taxa_en', elTE.value);
+                var elTD = document.getElementById('depreciacao-hora'); if(elTD) localStorage.setItem('rik3d_taxa_de', elTD.value);
+                var elVM = document.getElementById('valor-mao-obra'); if(elVM) localStorage.setItem('rik3d_val_mao', elVM.value);
+                var elCE = document.getElementById('custo-embalagem'); if(elCE) localStorage.setItem('rik3d_val_emb', elCE.value);
+                var elTEc = document.getElementById('taxa-ecom'); if(elTEc) localStorage.setItem('rik3d_taxa_ecom', elTEc.value);
+                calc();
+            }catch(e){}
+        }
+
+        // ==========================================
+        // GUARDAR NO CATÁLOGO E IMAGENS
+        // ==========================================
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) { 
+                    var img = new Image(); 
+                    img.onload = function() {
+                        var canvas = document.createElement('canvas'); var width = img.width; var height = img.height; var MAX = 400; 
+                        if (width > height) { if (width > MAX) { height *= MAX / width; width = MAX; } } else { if (height > MAX) { width *= MAX / height; height = MAX; } }
+                        canvas.width = width; canvas.height = height; var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                        base64Image = canvas.toDataURL('image/jpeg', 0.5); 
+                        var pv = document.getElementById('p-img-prev'); if(pv) { pv.src = base64Image; pv.style.display='block'; }
+                        var pt = document.getElementById('p-img-text'); if(pt) { pt.style.display='none'; }
+                    }; 
+                    img.src = e.target.result;
+                }; 
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function renderCategoriasRapidas() {
+            try {
+                var categoriasUnicas = [];
+                for (var i = 0; i < db.produtos.length; i++) {
+                    var p = db.produtos[i]; var pCat = String(p.categoria || "Geral").trim();
+                    if (pCat && !categoriasUnicas.includes(pCat)) { categoriasUnicas.push(pCat); }
+                }
+                var html = "";
+                for (var j = 0; j < categoriasUnicas.length; j++) {
+                    var c = categoriasUnicas[j]; html += `<div class="chip" onclick="selecionarCategoriaRapida('${c}')">${c}</div>`;
+                }
+                safeHTML('tags-categorias-rapidas', html);
+            } catch(e) {}
+        }
+        
+        function selecionarCategoriaRapida(cat) { safeSet('p-categoria', cat); }
+
+        function gerarDescricaoBasica() {
+            var nome = document.getElementById('p-nome').value; var cat = document.getElementById('p-categoria').value || "3D"; var preco = document.getElementById('venda-text').value;
+            if (!nome) { alert("Dê um nome ao produto!"); return; }
+            var coresStr = ""; var sels = document.querySelectorAll('.sel-f');
+            for (var i = 0; i < sels.length; i++) { var f = db.estoque.find(function(e) { return String(e.id) === String(sels[i].value); }); if (f) { coresStr += f.cor.split('|')[1].trim() + ", "; } }
+            coresStr = coresStr ? coresStr.slice(0,-2) : "Cores variadas";
+            var text = `🔥 Lançamento: *${nome}* 🔥\n\nA peça perfeita para a sua coleção de ${cat}. Impressa com precisão e material Voolt 3D original.\n\n🎨 Cores: ${coresStr}\n\n💰 Apenas R$ ${preco}\n🚀 Enviamos para todo o Brasil!\n\n👇 Chama no Direct!`;
+            safeSet('p-desc', text); mostrarToast("Texto gerado!");
+        }
+
+        function salvarProduto() {
+            try {
+                var idEl = document.getElementById('edit-prod-id'); var nEl = document.getElementById('p-nome'); var cEl = document.getElementById('p-categoria'); var dEl = document.getElementById('p-desc'); var vtEl = document.getElementById('venda-text'); var atEl = document.getElementById('atacado-text'); var qmEl = document.getElementById('qtd-min-atacado'); var tEl = document.getElementById('tempo'); var tmEl = document.getElementById('tempo-manual'); var lEl = document.getElementById('lucro'); var laEl = document.getElementById('lucro-atacado'); var qpEl = document.getElementById('qtd-plate'); var ceEl = document.getElementById('custo-extra');
+                var idEdit = idEl ? idEl.value : ""; var nome = nEl ? nEl.value : ""; var cat = cEl ? cEl.value : "Geral"; var descLoja = dEl ? dEl.value : ""; var preco = vtEl ? parseFloat(vtEl.value) || 0 : 0; var precoAtacado = atEl ? parseFloat(atEl.value) || 0 : 0; var qtdMin = qmEl ? parseInt(qmEl.value) || 10 : 10;
+                var custo = 0; if (vtEl && vtEl.getAttribute('data-custo')) { custo = parseFloat(vtEl.getAttribute('data-custo')); }
+                var tempoImp = tEl ? parseFloat(tEl.value) || 0 : 0; var tempoMan = tmEl ? parseFloat(tmEl.value) || 0 : 0; var percLucro = lEl ? parseFloat(lEl.value) || 100 : 100; var percLucroA = laEl ? parseFloat(laEl.value) || 60 : 60; var qtdPlateOriginal = qpEl ? parseFloat(qpEl.value) || 1 : 1; var cExtra = ceEl ? parseFloat(ceEl.value) || 0 : 0;
+                
+                if (!nome) { alert("Dê um nome ao produto!"); return; }
+
+                var mats = []; var sels = document.querySelectorAll('.sel-f');
+                for (var i = 0; i < sels.length; i++) {
+                    var sel = sels[i]; var pesoInput = document.getElementById('peso-f-' + i); var p = pesoInput ? parseFloat(pesoInput.value) || 0 : 0;
+                    if (sel.value != "0" && p > 0) { mats.push({ filId: sel.value, peso: (p / qtdPlateOriginal) }); }
+                }
+
+                var prodObj = { nome: String(nome), categoria: String(cat), descricao: String(descLoja), precoVenda: preco, precoAtacado: precoAtacado, qtdAtacado: qtdMin, custoUnidade: custo, materiais: mats, imagem: base64Image, tempoImp: tempoImp, tempoMan: tempoMan, percLucro: percLucro, percLucroA: percLucroA, qtdPlateOriginal: qtdPlateOriginal, custoExtra: cExtra };
+
+                if (idEdit) {
+                    var idx = db.produtos.findIndex(function(p) { return String(p.id) === String(idEdit); });
+                    if (idx > -1) { prodObj.imagem = base64Image || db.produtos[idx].imagem; db.produtos[idx] = { ...db.produtos[idx], ...prodObj }; }
+                } else {
+                    db.produtos.push({ id: Date.now(), feito: 0, vendido: 0, ...prodObj });
+                }
+                
+                limparCalc(); 
+                salvarBanco(); // Salva
+                mostrarToast("Produto Salvo com Sucesso!");
+                
+                // Redireciona para o Catálogo para ver a obra de arte
+                setTimeout(function(){ window.location.href = 'catalogo.html'; }, 500);
+
+            } catch(e) {}
+        }
+
+        // CORREÇÃO DAS CORES AQUI: Puxando o filId exato e atualizando o indicator
+        function editarProduto(id) {
+            try {
+                var p = db.produtos.find(function(x) { return String(x.id) === String(id); }); if (!p) return;
+                limparCalc();
+                safeSet('edit-prod-id', p.id); safeSet('p-nome', p.nome || ""); safeSet('p-categoria', p.categoria || ""); safeSet('p-desc', p.descricao || ""); safeSet('tempo', p.tempoImp); safeSet('tempo-manual', p.tempoMan); safeSet('lucro', p.percLucro); safeSet('lucro-atacado', p.percLucroA); safeSet('custo-extra', p.custoExtra); safeSet('qtd-plate', p.qtdPlateOriginal || 1); safeSet('qtd-min-atacado', p.qtdAtacado);
+
+                base64Image = p.imagem || "";
+                var pv = document.getElementById('p-img-prev'); var pt = document.getElementById('p-img-text'); 
+                if (p.imagem) { if(pv) { pv.src = p.imagem; pv.style.display = 'block'; } if(pt) { pt.style.display = 'none'; } } else { if(pv) { pv.src = ""; pv.style.display = 'none'; } if(pt) { pt.style.display = 'block'; } }
+
+                var mArea = document.getElementById('materiais-area'); if (mArea) { mArea.innerHTML = ''; }
+                slotsAmsCount = 0; var qP = parseFloat(p.qtdPlateOriginal) || 1;
+                
+                if (p.materiais && Array.isArray(p.materiais) && p.materiais.length > 0) {
+                    for (var i = 0; i < p.materiais.length; i++) {
+                        var m = p.materiais[i]; addSlotAMS();
+                        var selectElement = document.getElementById('sel-f-' + i); var pesoElement = document.getElementById('peso-f-' + i);
+                        if (selectElement) { 
+                            selectElement.value = m.filId; 
+                            updateInd(i); 
+                        }
+                        if (pesoElement) { var mp = parseFloat(m.peso) || 0; pesoElement.value = parseFloat((mp * qP).toFixed(2)); } 
+                    }
+                } else { addSlotAMS(); }
+
+                safeText('btn-salvar-calc', "ATUALIZAR PRODUTO"); calc();
+                safeSet('venda-text', parseFloat(p.precoVenda) || 0);
+                if (p.precoAtacado !== undefined) { safeSet('atacado-text', parseFloat(p.precoAtacado)); }
+            } catch(e) {}
+        }
+
+        function limparCalc() {
+            safeSet('edit-prod-id', ""); safeSet('p-nome', ""); safeSet('p-categoria', ""); safeSet('p-desc', ""); safeSet('tempo', "1"); safeSet('tempo-manual', "0.5"); safeSet('lucro', "100"); safeSet('lucro-atacado', "60"); safeSet('qtd-plate', "1"); safeSet('custo-extra', "0"); safeSet('venda-text', ""); safeSet('atacado-text', "");
+            document.getElementById('venda-text').dataset.manual = "";
+            document.getElementById('atacado-text').dataset.manual = "";
+            base64Image = "";
+            var pv = document.getElementById('p-img-prev'); if (pv) { pv.src = ""; pv.style.display = 'none'; }
+            var pt = document.getElementById('p-img-text'); if (pt) { pt.style.display = 'block'; }
+            safeText('btn-salvar-calc', "SALVAR NO CATÁLOGO");
+            var fileInput = document.getElementById('p-img-file'); if (fileInput) { fileInput.value = ""; }
+            var ocrStatus = document.getElementById('ocr-status'); if (ocrStatus) { ocrStatus.style.display = 'none'; }
+            iniciarCalculadora();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Rik 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .filtros-container { display:flex; gap:10px; margin-bottom:15px; }
+        .color-indicator { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-left: 5px; border: 1px solid #555; vertical-align: middle; }
+        .vitrine-img-mini { width: 70px; height: 70px; object-fit: cover; border-radius: 4px; background: var(--input); border: 1px solid var(--border); }
+        .card-flex { display: flex; gap: 15px; align-items: flex-start; }
+    </style>
+</head>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+<script src="banco.js"></script>
+<body>
+
+    <div id="menu-container"></div>
+
+    <div class="aba ativa">
+        <h3 style="margin-top: 0; color: var(--primary);">📦 O Seu Catálogo e Box Físico</h3>
+        
+        <div class="filtros-container">
+            <input type="text" id="filtro-nome" placeholder="🔍 Procurar produto pelo nome..." oninput="renderCatalogo()" style="width:100%;">
+        </div>
+        
+        <div id="listaProdutos"></div>
+    </div>
+
+    <script src="banco.js"></script>
+    
+    <script>
+        // Quando a página abre
+        window.onload = function() {
+            carregarBanco();
+            construirMenu('catalogo');
+            renderCatalogo();
+        };
+
+        // ==========================================
+        // RENDERIZAR A LISTA DE PRODUTOS
+        // ==========================================
+        function renderCatalogo() {
+            try {
+                var buscaEl = document.getElementById('filtro-nome'); 
+                var busca = buscaEl ? String(buscaEl.value || "").toLowerCase() : ""; 
+                var htmlProd = "";
+                
+                var produtosInvertidos = db.produtos.slice().reverse();
+
+                for (var j = 0; j < produtosInvertidos.length; j++) {
+                    var p = produtosInvertidos[j]; 
+                    if (!p) continue;
+                    
+                    if (String(p.nome || "").toLowerCase().includes(busca)) {
+                        var pVenda = parseFloat(p.precoVenda) || 0; 
+                        var pAtacado = p.precoAtacado !== undefined ? parseFloat(p.precoAtacado) : pVenda; 
+                        var qAtacado = parseInt(p.qtdAtacado) || 10;
+                        var pCusto = parseFloat(p.custoUnidade) || 0; 
+                        var pFeito = parseInt(p.feito) || 0; 
+                        var pVendido = parseInt(p.vendido) || 0;
+
+                        // Lógica avançada do Box Físico que você criou
+                        var consignadoGlobal = 0; 
+                        if (db.clientes) {
+                            db.clientes.forEach(function(cli) {
+                                if (cli.consignados) {
+                                    cli.consignados.forEach(function(con) {
+                                        if (String(con.prodId) === String(p.id)) {
+                                            consignadoGlobal += con.qtd;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        
+                        var emBox = pFeito - pVendido - consignadoGlobal;
+
+                        var coresHTML = "";
+                        if (p.materiais && Array.isArray(p.materiais)) {
+                            for (var m = 0; m < p.materiais.length; m++) {
+                                var mat = p.materiais[m]; 
+                                var fEst = db.estoque.find(function(e) { return String(e.id) === String(mat.filId); });
+                                if (fEst) {
+                                    var corHexM = fEst.cor && fEst.cor.includes('|') ? fEst.cor.split('|')[0].trim() : "transparent";
+                                    coresHTML += `<span class="color-indicator" style="background:${corHexM}; margin-right:2px;" title="${fEst.marca}"></span>`;
+                                }
+                            }
+                        }
+                        if (coresHTML !== "") { coresHTML = `<div style="margin:5px 0;">${coresHTML}</div>`; }
+
+                        var imgHTML = p.imagem ? `<img src="${p.imagem}" class="vitrine-img-mini">` : `<div class="vitrine-img-mini" style="display:flex; align-items:center; justify-content:center; font-size:10px; color:#555;">Sem Foto</div>`;
+
+                        htmlProd += `
+                        <div class="card-item">
+                            <div class="card-flex">
+                                ${imgHTML}
+                                <div style="flex: 1;">
+                                    <div style="display:flex; justify-content:space-between">
+                                        <b style="font-size:1.2em;">${p.nome || "Sem Nome"}</b>
+                                        <div>
+                                            <button class="btn-edit" onclick="editarProduto(${p.id})">✏️</button>
+                                            <button class="btn-del" onclick="apagarProduto(${p.id})">X</button>
+                                        </div>
+                                    </div>
+                                    ${coresHTML}
+                                    <div style="color:var(--primary); font-weight:bold; margin-top:5px;">
+                                        Varejo: R$ ${pVenda.toFixed(2)} | Atacado: R$ ${pAtacado.toFixed(2)} <small>(+${qAtacado} un)</small>
+                                    </div>
+                                    <div style="color:#858585; font-size:0.9em;">Custo de Fabricação: R$ ${pCusto.toFixed(2)}</div>
+                                </div>
+                            </div>
+<div style="margin:12px 0; background:var(--bg); padding:10px; border-radius:4px; font-weight:bold; border: 1px solid var(--border);">
+                                Estoque no Seu Box (Físico): <span style="color: ${emBox > 0 ? 'var(--primary)' : 'var(--danger)'}; font-size:1.2em;">${emBox} un.</span><br>
+                                Em Consignação (Lojas): <span style="color:var(--warn);">${consignadoGlobal} un.</span><br>
+                                <span style="color:#858585; font-size:0.9em; font-weight:normal;">Total Fabricado na Vida: ${pFeito}</span>
+                            </div>
+                            
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                <input type="number" id="qtd-acao-${p.id}" value="1" style="width:70px; margin-bottom:0;">
+                                <button class="btn-salvar" style="padding:10px; margin:0; flex:1;" onclick="gerenciarVendaCatalogo(${p.id},'prod')">🖨️ IMPRIMIR</button>
+                                <button class="btn-salvar" style="padding:10px; background:var(--warn); color:#000; margin:0; flex:1;" onclick="gerenciarVendaCatalogo(${p.id},'vend')">💰 VENDER</button>
+                            </div>
+                        </div>`;
+                    }
+                }
+                
+                if (htmlProd === "") htmlProd = "<p style='text-align:center; color:#858585; padding:20px;'>Nenhum produto encontrado. Vá à Calculadora para criar um.</p>";
+                document.getElementById('listaProdutos').innerHTML = htmlProd;
+
+            } catch(e) { console.error("Erro renderCatalogo:", e); }
+        }
+
+        // ==========================================
+        // LÓGICA DE PRODUÇÃO E VENDA RÁPIDA
+        // ==========================================
+        function gerenciarVendaCatalogo(id, acao) {
+            try {
+                var p = db.produtos.find(function(i) { return String(i.id) === String(id); }); 
+                if (!p) return;
+                
+                var qtdEl = document.getElementById('qtd-acao-' + id); 
+                var qtd = qtdEl ? (parseInt(qtdEl.value) || 1) : 1;
+                
+                if (acao === 'prod') {
+                    if (p.materiais && Array.isArray(p.materiais)) {
+                        for(var i = 0; i < p.materiais.length; i++) {
+                            var m = p.materiais[i];
+                            var idxEstoque = db.estoque.findIndex(function(est) { return String(est.id) === String(m.filId); });
+                            if (idxEstoque > -1) {
+                                var pAtual = db.estoque[idxEstoque].pesoAtual !== undefined ? parseFloat(db.estoque[idxEstoque].pesoAtual) : parseFloat(db.estoque[idxEstoque].pesoOriginal);
+                                var matPeso = parseFloat(m.peso) || 0; 
+                                db.estoque[idxEstoque].pesoAtual = pAtual - (matPeso * qtd);
+                            }
+                        }
+                    }
+                    p.feito = (parseInt(p.feito) || 0) + qtd;
+                    mostrarToast(qtd + " peça(s) fabricada(s)! Estoque descontado.");
+                } else {
+                    var pFeito = parseInt(p.feito) || 0; 
+                    var pVend = parseInt(p.vendido) || 0;
+                    
+                    var consignadoGlobal = 0;
+                    db.clientes.forEach(function(cli) {
+                        if (cli.consignados) {
+                            cli.consignados.forEach(function(con) {
+                                if (String(con.prodId) === String(p.id)) { consignadoGlobal += con.qtd; }
+                            });
+                        }
+                    });
+
+                    var emBox = pFeito - pVend - consignadoGlobal;
+
+                    if (emBox < qtd) { 
+                        alert(`Aviso: Sem estoque físico no seu Box! Você só tem ${emBox} unidades prontas aqui.\n\nImprima mais peças primeiro.`); 
+                        return; 
+                    }
+                    
+                    p.vendido = pVend + qtd;
+                    var precoCobrado = parseFloat(p.precoVenda) || 0;
+                    var tagVenda = "Varejo";
+                    if (p.precoAtacado !== undefined && p.qtdAtacado && qtd >= parseInt(p.qtdAtacado)) { 
+                        precoCobrado = parseFloat(p.precoAtacado); 
+                        tagVenda = "Atacado";
+                    }
+                    
+                    var valorTotal = precoCobrado * qtd;
+                    db.financas.push({ 
+                        id: Date.now(), 
+                        desc: "Venda: " + p.nome + " (" + tagVenda + ")", 
+                        valor: valorTotal, 
+                        data: new Date().toLocaleDateString() 
+                    });
+                    mostrarToast(`Venda de R$ ${valorTotal.toFixed(2)} lançada no Caixa!`);
+                }
+                
+                salvarBanco(); 
+                renderCatalogo();
+            } catch(e) { console.error(e); }
+        }
+
+        function editarProduto(id) {
+            localStorage.setItem('rik3d_edit_prod_id', id);
+            window.location.href = 'calc.html';
+        }
+
+        function apagarProduto(id) {
+            if(!confirm("Tem a certeza absoluta que deseja apagar este produto?")) return;
+            db.produtos = db.produtos.filter(function(i){ return String(i.id) !== String(id); });
+            salvarBanco(); 
+            renderCatalogo();
+        }
+    </script>
+</body>
+</html>

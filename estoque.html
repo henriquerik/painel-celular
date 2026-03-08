@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Estoque Rik 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .cor-swatch { width: 24px; height: 24px; border-radius: 4px; cursor: pointer; border: 1px solid #555; display: inline-block; margin-right: 5px; margin-bottom: 5px; transition: transform 0.1s; }
+        .cor-swatch:hover { transform: scale(1.3); border-color: white; z-index: 10; position: relative; }
+        .paleta-categoria-titulo { width: 100%; margin-top: 15px; font-size: 11px; color: var(--primary); font-weight: bold; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 8px; }
+        .color-indicator { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-left: 5px; border: 1px solid #555; vertical-align: middle; }
+        .tipo-filamento { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 5px; }
+        .btn-tipo { background: var(--input); border: 1px solid var(--border); padding: 10px; border-radius: 4px; color: var(--text); font-weight: bold; cursor: pointer; }
+        .btn-tipo.active-tipo { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .lista-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .chip { background: var(--input); padding: 8px 12px; border-radius: 15px; font-size: 11px; cursor: pointer; border: 1px solid var(--border); display: flex; align-items: center; gap: 5px; }
+        .marca-container { background: var(--card); padding: 15px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 15px; }
+        .cor-section { background: var(--card); padding: 15px; border-radius: 4px; margin-top: 10px; border: 1px solid var(--border); }
+    </style>
+</head>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+<script src="banco.js"></script>
+<body>
+
+    <div id="menu-container"></div>
+
+    <div class="aba ativa">
+        <input type="hidden" id="edit-est-id" value="">
+        
+        <div class="marca-container">
+            <label>Gerenciar Marcas (Fabricantes)</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="nova_marca_input" placeholder="Digite uma nova marca..." style="margin:0; flex:1;">
+                <button class="btn-salvar" onclick="addMarca()" style="width:50px; margin:0; padding:0; font-size:18px;">+</button>
+            </div>
+            <div id="lista-marcas-chips" class="lista-chips"></div>
+        </div>
+        
+        <div class="grid-2">
+            <div>
+                <label>Marca Escolhida:</label>
+                <input type="text" id="m_marca" readonly style="background: rgba(0,0,0,0.2); cursor: not-allowed;" placeholder="Clique numa marca acima">
+            </div>
+            <div>
+                <label>Tipo de Material:</label>
+                <div class="tipo-filamento">
+                    <button id="btn-tipo-PLA" class="btn-tipo active-tipo" onclick="setTipoSolo('PLA')">PLA</button>
+                    <button id="btn-tipo-PETG" class="btn-tipo" onclick="setTipoSolo('PETG')">PETG</button>
+                    <button id="btn-tipo-ABS" class="btn-tipo" onclick="setTipoSolo('ABS')">ABS</button>
+                    <button id="btn-tipo-TPU" class="btn-tipo" onclick="setTipoSolo('TPU')">TPU</button>
+                </div>
+                <input type="hidden" id="m_tipo" value="PLA">
+            </div>
+        </div>
+        
+        <div class="cor-section">
+            <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                <label style="margin:0; color:var(--primary);">Cor do Filamento (Liberdade Total)</label>
+                <button onclick="togglePaleta()" class="btn-limpar" id="btn-toggle-paleta" style="margin:0; padding:6px 12px; width:auto; font-size:10px;">VER CATÁLOGO PRONTO</button>
+            </div>
+            
+            <p style="font-size:11px; color:#858585; margin-top:5px; margin-bottom:10px;">
+                Clique no quadrado para escolher a cor visualmente e digite o nome que quiser ao lado.
+            </p>
+
+            <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                <input type="color" id="e-cor-picker" value="#FFFFFF" style="width:50px; height:40px; padding:0; border:1px solid #555; border-radius:4px; cursor:pointer;" onchange="atualizarHexOculto()">
+                <input type="text" id="e-cor-texto" placeholder="Nome da Cor (Ex: Azul Escuro Brilhante)" value="Branco Sólido" style="flex:1; margin:0; font-weight:bold;">
+            </div>
+            
+            <div id="paleta-cores-estoque" style="width: 100%; margin-top:15px; display:none;"></div>
+        </div>
+
+        <div class="grid-2" style="margin-top:15px;">
+            <div>
+                <label>Peso Inicial do Rolo (g):</label>
+                <input type="number" id="m_peso" value="1000">
+            </div>
+            <div>
+                <label>Preço Pago (R$):</label>
+                <input type="number" id="m_valor" value="115">
+            </div>
+        </div>
+        
+        <div class="grid-2" style="margin-top: 20px;">
+            <button id="btn-add-estoque" class="btn-salvar" style="margin:0;" onclick="salvarEstoque()">CADASTRAR ROLO</button>
+            <button id="btn-est-cancel" class="btn-limpar" style="display:none; margin:0;" onclick="cancelarEdicaoEstoque()">CANCELAR</button>
+        </div>
+
+        <div class="grid-2" style="margin-top: 25px;">
+            <div class="box-info">
+                <label>Quantidade de Rolos</label>
+                <b id="est-total-itens" style="color:#fff;">0</b>
+            </div>
+            <div class="box-info">
+                <label>Dinheiro Parado no Estoque</label>
+                <b id="est-valor-total" style="color:var(--warn);">R$ 0,00</b>
+            </div>
+        </div>
+        
+        <h3 style="margin-top: 30px; color: var(--primary);">O Seu Estoque</h3>
+        <div id="listaEstoque"></div>
+    </div>
+
+    <script src="banco.js"></script>
+    
+    <script>
+        var paletaExpandida = false;
+
+        // O Mega Catálogo de Cores
+        var baseCores = [
+            "🟩 SÓLIDOS BÁSICOS|Branco Sólido,#FFFFFF|Preto Sólido,#000000|Cinza Claro,#D3D3D3|Cinza Médio,#808080|Cinza Grafite,#4F4F4F|Prata Sólido,#C0C0C0|Cobre Sólido,#b87333|Ouro Sólido,#FFD700|Bege/Pele,#F5DEB3|Marrom Claro,#A0522D|Marrom Escuro,#5C4033",
+            "🟥 SÓLIDOS QUENTES|Vermelho Vivo,#FF0000|Vermelho Cereja,#DC143C|Vinho/Marsala,#800000|Rosa Claro,#FFB6C1|Rosa Choque,#FF1493|Rosa Púrpura,#C71585|Laranja Vivo,#FFA500|Laranja Cenoura,#FF8C00|Amarelo Sol,#FFD700|Amarelo Canário,#FFFF00|Mostarda,#DAA520",
+            "🟦 SÓLIDOS FRIOS|Azul Bebê,#87CEEB|Azul Celeste,#00BFFF|Azul Cobalto,#0047AB|Azul Marinho,#000080|Verde Água,#00FA9A|Verde Bandeira,#008000|Verde Esmeralda,#50C878|Verde Oliva,#808000|Verde Limão,#32CD32|Roxo Vivo,#800080|Lilás,#DDA0DD|Violeta,#EE82EE",
+            "☁️ FOSCO E MATTE|Branco Fosco,#F8F8F8|Preto Fosco,#1C1C1C|Cinza Fosco,#B0BEC5|Vermelho Fosco,#CD5C5C|Rosa Fosco,#FFC0CB|Azul Fosco,#4682B4|Verde Fosco,#556B2F|Laranja Fosco,#F4A460|Amarelo Fosco,#F0E68C|Roxo Fosco,#9370DB",
+            "✨ SEDA (SILK)|Ouro Silk,#DAA520|Prata Silk,#C0C0C0|Bronze Silk,#CD7F32|Cobre Silk,#B87333|Inox Silk,#A9A9A9|Rose Gold Silk,#B76E79|Vermelho Silk,#E0115F|Azul Silk,#0F52BA|Verde Silk,#50C878|Roxo Silk,#9966CC|Pérola Silk,#FDF5E6|Preto Silk,#2F4F4F",
+            "🌗 DUAL E TRI COLOR SILK|Duo Azul-Rosa,#8A2BE2|Duo Ouro-Prata,#D4AF37|Duo Ouro-Verde,#808000|Duo Ouro-Vermelho,#B22222|Tri Azul-Laran-Verd,#20B2AA|Tri Ouro-Rosa-Roxo,#DA70D6|Tri Verm-Azul-Verd,#4682B4|Shadow Vermelho-Preto,#8B0000|Shadow Azul-Preto,#00008B",
+            "🌟 TRANSLÚCIDOS E NEON|Transp. Natural,#E0FFFF|Transp. Vermelho,#FA8072|Transp. Azul,#ADD8E6|Transp. Verde,#98FB98|Transp. Amarelo,#FAFAD2|Neon Amarelo,#CCFF00|Neon Verde,#39FF14|Neon Laranja,#FF6700|Neon Rosa,#FF007F",
+            "🪵 ESPECIAIS E TEXTURAS|Mármore Claro,#EBE3CE|Mármore Escuro,#D3D3D3|Galáxia Preto,#0C0C0C|Madeira Clara,#DEB887|Madeira Escura,#8B5A2B|Fibra Carbono CF,#2B2B2B|Glow Verde (Noite),#9ACD32|Glow Azul (Noite),#AFEEEE"
+        ];
+
+        var categoriasCores = [];
+        for (var cc = 0; cc < baseCores.length; cc++) {
+            var partes = baseCores[cc].split('|');
+            var nomeCategoria = partes.shift();
+            var objCores = [];
+            for (var jj = 0; jj < partes.length; jj++) {
+                var nome_hex = partes[jj].split(',');
+                objCores.push({nome: nome_hex[0], hex: nome_hex[1]});
+            }
+            categoriasCores.push({nome: nomeCategoria, cores: objCores});
+        }
+
+        // ==========================================
+        // INICIALIZAÇÃO DA ABA
+        // ==========================================
+        window.onload = function() {
+            carregarBanco();
+            construirMenu('estoque');
+            
+            if (!Array.isArray(db.marcas) || db.marcas.length === 0) {
+                db.marcas = ["Voolt 3D", "3D Prime", "Esun"];
+            }
+            
+            // Define marca padrão se vazio
+            if(db.marcas.length > 0 && !document.getElementById('m_marca').value) {
+                document.getElementById('m_marca').value = db.marcas[0];
+            }
+
+            renderMarcas();
+            construirHTMLPaleta();
+            renderEstoque();
+        };
+
+        // ==========================================
+        // GESTÃO DE MARCAS (FABRICANTES)
+        // ==========================================
+        function renderMarcas() {
+            var html = "";
+            for (var i = 0; i < db.marcas.length; i++) {
+                html += `<div class="chip" onclick="selecionarMarca('${db.marcas[i]}')">${db.marcas[i]} <span style="color:var(--danger); font-weight:bold; margin-left:4px;" onclick="deletarMarca(event, ${i})">×</span></div>`;
+            }
+            document.getElementById('lista-marcas-chips').innerHTML = html;
+        }
+
+        function addMarca() {
+            var input = document.getElementById('nova_marca_input');
+            var val = input.value.trim();
+            if (val && !db.marcas.includes(val)) {
+                db.marcas.push(val);
+                salvarBanco();
+                renderMarcas();
+            }
+            input.value = "";
+        }
+
+        function deletarMarca(e, i) {
+            e.stopPropagation(); // Impede de selecionar a marca ao tentar apagar
+            db.marcas.splice(i, 1);
+            salvarBanco();
+            renderMarcas();
+        }
+
+        function selecionarMarca(m) {
+            document.getElementById('m_marca').value = m;
+        }
+
+        // ==========================================
+        // GESTÃO DE CORES E TIPOS
+        // ==========================================
+        function setTipoSolo(t) {
+            document.getElementById('m_tipo').value = t;
+            var btns = document.querySelectorAll('.tipo-filamento .btn-tipo');
+            for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('active-tipo'); }
+            var btnF = document.getElementById('btn-tipo-' + t);
+            if (btnF) { btnF.classList.add('active-tipo'); }
+        }
+
+        function atualizarHexOculto() {
+            // Apenas para manter compatibilidade, caso você mude o color picker manualmente
+        }
+
+        function selecionarCorPaleta(hex, nome) {
+            document.getElementById('e-cor-picker').value = hex;
+            document.getElementById('e-cor-texto').value = nome;
+        }
+
+        function construirHTMLPaleta() {
+            var html = "";
+            for (var i = 0; i < categoriasCores.length; i++) {
+                var cat = categoriasCores[i];
+                html += `<div class="paleta-categoria-titulo">${cat.nome}</div>`;
+                for (var j = 0; j < cat.cores.length; j++) {
+                    var c = cat.cores[j];
+                    html += `<div class="cor-swatch" style="background-color:${c.hex};" onclick="selecionarCorPaleta('${c.hex}', '${c.nome}')" title="${c.nome}"></div>`;
+                }
+            }
+            document.getElementById('paleta-cores-estoque').innerHTML = html;
+        }
+
+        function togglePaleta() {
+            paletaExpandida = !paletaExpandida;
+            var divPaleta = document.getElementById('paleta-cores-estoque');
+            var btn = document.getElementById('btn-toggle-paleta');
+            
+            if (paletaExpandida) {
+                divPaleta.style.display = "block";
+                btn.innerText = "OCULTAR CATÁLOGO";
+            } else {
+                divPaleta.style.display = "none";
+                btn.innerText = "VER CATÁLOGO PRONTO";
+            }
+        }
+
+        // ==========================================
+        // ADICIONAR E EDITAR NO ESTOQUE
+        // ==========================================
+        function salvarEstoque() {
+            var marca = document.getElementById('m_marca').value;
+            var corHex = document.getElementById('e-cor-picker').value;
+            var corTexto = document.getElementById('e-cor-texto').value || "Cor Personalizada";
+            var tipo = document.getElementById('m_tipo').value;
+            var peso = parseFloat(document.getElementById('m_peso').value) || 0;
+            var valor = parseFloat(document.getElementById('m_valor').value) || 0;
+            var idEdit = document.getElementById('edit-est-id').value;
+
+            if (!marca || peso <= 0) {
+                alert("Preencha a Marca selecionando uma na lista e verifique o peso!");
+                return;
+            }
+
+            var corFinalTxt = corHex + " | " + corTexto + " " + tipo; 
+
+            if (idEdit) {
+                var idx = db.estoque.findIndex(function(e) { return String(e.id) === String(idEdit); });
+                if (idx > -1) {
+                    var oldPesoAtual = db.estoque[idx].pesoAtual !== undefined ? parseFloat(db.estoque[idx].pesoAtual) : parseFloat(db.estoque[idx].pesoOriginal);
+                    var consumido = parseFloat(db.estoque[idx].pesoOriginal) - oldPesoAtual;
+                    var novoPesoAtual = peso - consumido; 
+                    if (novoPesoAtual < 0) novoPesoAtual = 0;
+                    
+                    db.estoque[idx].marca = marca; 
+                    db.estoque[idx].cor = corFinalTxt; 
+                    db.estoque[idx].pesoOriginal = peso; 
+                    db.estoque[idx].pesoAtual = novoPesoAtual; 
+                    db.estoque[idx].valor = valor;
+                    
+                    var fIdx = db.financas.findIndex(function(f) { return String(f.estoqueId) === String(idEdit); });
+                    if (fIdx > -1) { 
+                        db.financas[fIdx].valor = -Math.abs(valor); 
+                        db.financas[fIdx].desc = "Compra Filamento: " + marca; 
+                        db.financas[fIdx].corHex = corHex; 
+                    }
+                }
+            } else {
+                var novoId = Date.now();
+                db.estoque.push({ 
+                    id: novoId, 
+                    marca: marca, 
+                    cor: corFinalTxt, 
+                    pesoOriginal: peso, 
+                    pesoAtual: peso, 
+                    valor: valor 
+                });
+                
+                db.financas.push({ 
+                    id: Date.now()+1, 
+                    estoqueId: novoId, 
+                    desc: "Compra Filamento: " + marca + " (" + corTexto + ")", 
+                    valor: -Math.abs(valor), 
+                    data: new Date().toLocaleDateString(), 
+                    corHex: corHex 
+                });
+            }
+            
+            limparEstoque();
+            salvarBanco();
+            renderEstoque();
+            mostrarToast("Estoque Atualizado!");
+        }
+
+        function editarEstoque(id) {
+            var f = db.estoque.find(function(x) { return String(x.id) === String(id); }); 
+            if(!f) return;
+            
+            document.getElementById('edit-est-id').value = f.id;
+            document.getElementById('m_marca').value = f.marca || "";
+            
+            var corStr = String(f.cor || "");
+            if(corStr && corStr.includes(' | ')) {
+                var partes = corStr.split(' | '); 
+                var hex = partes[0].trim(); 
+                var partesTexto = partes[1].trim().split(' '); 
+                
+                var ultimaPalavra = partesTexto[partesTexto.length - 1]; 
+                if(["PLA", "PETG", "ABS", "TPU"].includes(ultimaPalavra)) { 
+                    setTipoSolo(ultimaPalavra); 
+                } else {
+                    setTipoSolo("PLA"); 
+                }
+                
+                var nomeCorPura = partesTexto.slice(0, -1).join(' '); 
+                if(!nomeCorPura) nomeCorPura = partesTexto[0];
+                
+                selecionarCorPaleta(hex, nomeCorPura);
+            } 
+
+            document.getElementById('m_peso').value = f.pesoOriginal || 1000;
+            document.getElementById('m_valor').value = f.valor || 0;
+            
+            document.getElementById('btn-add-estoque').innerText = "ATUALIZAR ROLO";
+            document.getElementById('btn-est-cancel').style.display = "inline";
+            
+            window.scrollTo(0,0);
+        }
+
+        function limparEstoque() {
+            document.getElementById('edit-est-id').value = "";
+            document.getElementById('e-cor-picker').value = "#FFFFFF";
+            document.getElementById('e-cor-texto').value = "Branco Sólido";
+            setTipoSolo('PLA');
+            document.getElementById('m_peso').value = "1000";
+            document.getElementById('m_valor').value = "115";
+            
+            document.getElementById('btn-add-estoque').innerText = "CADASTRAR ROLO";
+            document.getElementById('btn-est-cancel').style.display = "none";
+        }
+
+        function cancelarEdicaoEstoque() { 
+            limparEstoque(); 
+        }
+
+        // ==========================================
+        // RENDERIZAR A LISTA DE ESTOQUE
+        // ==========================================
+        function renderEstoque() {
+            var vT = 0; 
+            var htmlEstoque = "";
+            
+            for (var i = 0; i < db.estoque.length; i++) {
+                var f = db.estoque[i]; 
+                if (!f) continue;
+                
+                var pOrig = parseFloat(f.pesoOriginal) || 0; 
+                var pAtual = f.pesoAtual !== undefined ? parseFloat(f.pesoAtual) : pOrig; 
+                var val = parseFloat(f.valor) || 0;
+                
+                if (pOrig > 0) { 
+                    vT += (val / pOrig) * pAtual; 
+                }
+                
+                var corStr = String(f.cor || ""); 
+                var corHex = corStr.includes('|') ? corStr.split('|')[0].trim() : "transparent"; 
+                var corNome = corStr.includes('|') ? corStr.split('|')[1].trim() : (f.cor || "Desconhecida");
+                
+                htmlEstoque += `
+                <div class="card-item">
+                    <span class="color-indicator" style="background:${corHex}; margin-right:8px; width:16px; height:16px;"></span>
+                    <b>${f.marca || 'Sem Marca'}</b> - ${corNome} <br>
+                    <small style="color:#858585;">Saldo Restante: ${pAtual.toFixed(0)}g • Dinheiro neste rolo: R$ ${((val / pOrig) * pAtual).toFixed(2)}</small>
+                    <div style="position:absolute; right:10px; top:10px">
+                        <button class="btn-edit" onclick="editarEstoque('${f.id}')">✏️</button>
+                        <button class="btn-del" onclick="apagarEstoque('${f.id}')">X</button>
+                    </div>
+                </div>`;
+            }
+            
+            document.getElementById('listaEstoque').innerHTML = htmlEstoque;
+            document.getElementById('est-valor-total').innerText = "R$ " + vT.toFixed(2);
+            document.getElementById('est-total-itens').innerText = db.estoque.length;
+        }
+
+        function apagarEstoque(id) {
+            if(!confirm("Tem a certeza que deseja apagar este rolo do estoque? (A despesa não será apagada do Caixa)")) return;
+            db.estoque = db.estoque.filter(function(i){ return String(i.id) !== String(id); });
+            salvarBanco(); 
+            renderEstoque();
+        }
+    </script>
+</body>
+</html>

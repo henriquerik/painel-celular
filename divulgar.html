@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Divulgação | Rik 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .link-box { background: var(--card); padding: 20px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .url-display { background: var(--bg); padding: 10px; border-radius: 5px; font-family: monospace; color: var(--primary); margin: 10px 0; border: 1px solid #444; word-break: break-all; }
+        .btn-copy { background: var(--primary); color: black; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; text-transform: uppercase; }
+        .btn-copy:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+    <div id="menu-container"></div>
+
+    <div class="aba ativa">
+        <h2 style="color:var(--primary); margin-top:0;">📢 DIVULGAÇÃO E VENDAS</h2>
+
+        <div class="link-box">
+            <h3 style="margin:0; font-size:16px;">🛍️ Link para Clientes (Varejo)</h3>
+            <p style="font-size:12px; color:#858585;">Mande este link para clientes finais comprarem varejo.</p>
+            <div class="url-display" id="link-cliente">Carregando...</div>
+            <button class="btn-copy" onclick="copiarLink('link-cliente')">Copiar Link da Vitrine</button>
+        </div>
+
+        <div class="link-box" style="border-color: var(--warn);">
+            <h3 style="margin:0; font-size:16px; color:var(--warn);">🏬 Área do Lojista (Atacado)</h3>
+            <p style="font-size:12px; color:#858585;">Use este link para lojistas parceiros verem seu catálogo com preços e quantidades mínimas de atacado.</p>
+            <div class="url-display" id="link-lojista">Carregando...</div>
+            <button class="btn-copy" style="background:var(--warn);" onclick="copiarLink('link-lojista')">Copiar Link do Lojista</button>
+        </div>
+
+        <div class="link-box">
+            <h3 style="margin:0; font-size:16px;">📱 QR Code de Balcão</h3>
+            <p style="font-size:12px; color:#858585;">Gere um QR Code para imprimir e colocar na sua mesa de feira ou balcão.</p>
+            <button class="btn-limpar" style="width:100%; margin-top:10px;" onclick="gerarQR()">GERAR QR CODE AGORA</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+    <script src="banco.js"></script>
+    
+    <script>
+        window.onload = function() {
+            carregarBanco();
+            construirMenu('divulgar');
+            
+            let inputSalvo = db.configGlobal?.githubUser || "";
+            let linkBase = "";
+
+            if (inputSalvo === "") {
+                linkBase = "⚠️-VA-EM-OPCOES-E-SALVE-SEU-USUARIO";
+            } else if (inputSalvo.startsWith("http")) {
+                // Se você colou o link completo nas opções
+                linkBase = inputSalvo;
+            } else {
+                // Se você digitou só o nome de usuário (ex: rik3dstudio)
+                linkBase = `https://${inputSalvo}.github.io/vitrine-rik3d/`;
+            }
+            
+            // Remove a barra do final se tiver, para o link do lojista ficar bonito
+            if(linkBase.endsWith("/")) linkBase = linkBase.slice(0, -1);
+            
+            document.getElementById('link-cliente').innerText = linkBase;
+            document.getElementById('link-lojista').innerText = linkBase + "?ref=lojista";
+        };
+
+        function copiarLink(id) {
+            let texto = document.getElementById(id).innerText;
+            
+            if(texto.includes("⚠️")) {
+                alert("Vá na aba ⚙️ OPÇÕES e cadastre o seu usuário do GitHub primeiro!");
+                return;
+            }
+            
+            var tempInput = document.createElement("input");
+            tempInput.value = texto;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            mostrarToast("Link copiado com sucesso!");
+        }
+
+        function gerarQR() {
+            let texto = document.getElementById('link-cliente').innerText;
+            if(texto.includes("⚠️")) {
+                alert("Vá na aba ⚙️ OPÇÕES primeiro!"); return;
+            }
+            window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(texto)}`, '_blank');
+        }
+    </script>
+</body>
+</html>

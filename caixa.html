@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caixa Rik 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .fin-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--card); border-radius: 4px; margin-bottom: 8px; border: 1px solid var(--border); border-left: 4px solid transparent; }
+        .fin-item.entrada { border-left-color: var(--primary); }
+        .fin-item.saida { border-left-color: var(--danger); }
+        .fin-desc { font-size: 1.1em; font-weight: bold; color: var(--text); }
+        .fin-data { font-size: 0.85em; color: #858585; margin-top: 4px; }
+        .fin-valor { font-size: 1.3em; font-weight: bold; }
+        .color-indicator { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-right: 8px; border: 1px solid #555; vertical-align: middle; }
+    </style>
+</head>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+<script src="banco.js"></script>
+<body>
+
+    <div id="menu-container"></div>
+
+    <div class="aba ativa">
+        
+        <div class="res-venda" style="background:var(--card); border:1px solid var(--border);">
+            <small style="color:#858585;">SALDO LÍQUIDO EM CAIXA</small><br>
+            <span id="saldo-total" style="font-size:3em; font-weight:bold; color:var(--primary);">R$ 0,00</span>
+        </div>
+        
+        <div class="card-item" style="margin-top: 20px; border-left-color: var(--warn);">
+            <h3 style="margin-top:0; color:var(--warn); text-transform: uppercase; font-size: 12px;">💸 Lançamento Manual</h3>
+            <label>Motivo da Movimentação:</label>
+            <input type="text" id="f-desc" placeholder="Ex: Compra de Super Bonder / Venda Avulsa">
+            
+            <label style="margin-top:10px;">Valor (R$):</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="f-valor" style="flex: 2; margin-bottom: 0;">
+                <select id="f-tipo" style="flex: 1; margin-bottom: 0;">
+                    <option value="entrada">🟢 ENTRADA (+)</option>
+                    <option value="saida">🔴 SAÍDA (-)</option>
+                </select>
+            </div>
+            <button class="btn-salvar" onclick="addFinanca()">REGISTRAR NO CAIXA</button>
+        </div>
+
+        <div class="grid-2" style="margin-top:15px;">
+            <div class="box-info" style="border-left: 3px solid var(--primary);">
+                <label>Total de Entradas</label>
+                <b id="fin-entradas" style="color:var(--primary); font-size: 1.5em;">R$ 0,00</b>
+            </div>
+            <div class="box-info" style="border-left: 3px solid var(--danger);">
+                <label>Total de Saídas</label>
+                <b id="fin-saidas" style="color:var(--danger); font-size: 1.5em;">R$ 0,00</b>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 30px; color: var(--primary);">Histórico de Movimentações</h3>
+        <div id="listaFinancas"></div>
+    </div>
+
+    <script src="banco.js"></script>
+    
+    <script>
+        function safeSet(id, val) { try { var el = document.getElementById(id); if(el) el.value = val; } catch(e){} }
+
+        window.onload = function() {
+            carregarBanco();
+            construirMenu('caixa');
+            renderCaixa();
+        };
+
+        function addFinanca() {
+            var dEl = document.getElementById('f-desc'); 
+            var vEl = document.getElementById('f-valor'); 
+            var tEl = document.getElementById('f-tipo');
+            
+            var desc = dEl ? dEl.value.trim() : ""; 
+            var val = vEl ? parseFloat(vEl.value) : 0; 
+            var tipo = tEl ? tEl.value : "entrada";
+            
+            if(!desc || isNaN(val) || val <= 0) {
+                alert("Por favor, preencha o motivo e um valor maior que zero.");
+                return;
+            }
+
+            var finalVal = tipo === 'entrada' ? val : -Math.abs(val);
+            
+            db.financas.push({ 
+                id: Date.now(), 
+                desc: String(desc), 
+                valor: finalVal, 
+                data: new Date().toLocaleDateString() 
+            });
+            
+            safeSet('f-desc', ''); 
+            safeSet('f-valor', ''); 
+            
+            salvarBanco(); 
+            renderCaixa();
+            mostrarToast("Movimentação registada!");
+        }
+
+        function renderCaixa() {
+            try {
+                var ent = 0; 
+                var sai = 0; 
+                var htmlFin = ""; 
+                
+                var fArr = (db.financas || []).slice().reverse();
+                
+                for (var x = 0; x < fArr.length; x++) {
+                    var fFin = fArr[x]; 
+                    if(!fFin) continue;
+
+                    var valFin = parseFloat(fFin.valor) || 0;
+                    
+                    if (valFin > 0) {
+                        ent += valFin;
+                    } else {
+                        sai += Math.abs(valFin);
+                    }
+                    
+                    var iconeCorFin = fFin.corHex ? `<span class="color-indicator" style="background:${fFin.corHex};"></span>` : "";
+                    var classeTipo = valFin > 0 ? 'entrada' : 'saida';
+                    var corTexto = valFin > 0 ? 'var(--primary)' : 'var(--danger)';
+                    var sinal = valFin > 0 ? '+' : '-';
+                    
+                    htmlFin += `
+                    <div class="fin-item ${classeTipo}">
+                        <div style="flex: 1;">
+                            <div class="fin-desc">${iconeCorFin}${fFin.desc || "Lançamento"}</div>
+                            <div class="fin-data">📅 ${fFin.data || ""}</div>
+                        </div>
+                        <div class="fin-valor" style="color: ${corTexto};">
+                            ${sinal} R$ ${Math.abs(valFin).toFixed(2)}
+                        </div>
+                        <button class="btn-del" style="padding:6px 10px; margin-left:15px;" onclick="apagarFinanca(${fFin.id})" title="Apagar">X</button>
+                    </div>`;
+                }
+                
+                document.getElementById('listaFinancas').innerHTML = htmlFin || "<p style='text-align:center; color:#858585;'>Nenhuma movimentação.</p>";
+                document.getElementById('fin-entradas').innerText = "R$ " + ent.toFixed(2);
+                document.getElementById('fin-saidas').innerText = "R$ " + sai.toFixed(2);
+                
+                var saldoLiquido = ent - sai;
+                var saldoEl = document.getElementById('saldo-total');
+                saldoEl.innerText = "R$ " + saldoLiquido.toFixed(2);
+                saldoEl.style.color = saldoLiquido < 0 ? "var(--danger)" : "var(--primary)";
+
+            } catch(e) { console.error(e); }
+        }
+
+        function apagarFinanca(id) {
+            if(!confirm("Tem a certeza que deseja apagar este registo?")) return;
+            db.financas = db.financas.filter(function(i){ return String(i.id) !== String(id); });
+            salvarBanco(); 
+            renderCaixa();
+        }
+    </script>
+</body>
+</html>

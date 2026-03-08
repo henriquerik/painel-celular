@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Configurações | Rik 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .config-card { background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .color-preset { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: inline-block; margin-right: 10px; }
+        input[type="text"] { width: 100%; padding: 10px; border-radius: 5px; background: #252525; color: white; border: 1px solid #555; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div id="menu-container"></div>
+
+    <div class="aba ativa">
+        <h2 style="color:var(--primary); margin-top:0;">⚙️ PERSONALIZAÇÃO E AJUSTES</h2>
+
+        <div class="config-card">
+            <h3 style="margin-top:0; font-size:14px; color:var(--primary);">🌐 CONFIGURAÇÃO DA VITRINE ONLINE</h3>
+            <p style="font-size:12px; color:#858585;">Seu usuário do GitHub (necessário para gerar os links na aba Divulgar).</p>
+            <label>Usuário GitHub:</label>
+            <input type="text" id="cfg-github-user" placeholder="Ex: rik3dstudio">
+            <button class="btn-salvar" onclick="salvarGithub()" style="margin-top:15px; width:100%;">💾 ATUALIZAR LINKS DE VENDA</button>
+        </div>
+
+        <div class="config-card">
+            <h3 style="margin-top:0; font-size:14px; color:var(--primary);">🎨 CORES DO SISTEMA</h3>
+            <label>Escolha a cor principal:</label>
+            <div style="margin: 15px 0;">
+                <div class="color-preset" style="background:#007acc;" onclick="mudarCor('#007acc')"></div>
+                <div class="color-preset" style="background:#4ecca3;" onclick="mudarCor('#4ecca3')"></div>
+                <div class="color-preset" style="background:#e94560;" onclick="mudarCor('#e94560')"></div>
+                <div class="color-preset" style="background:#f1c40f;" onclick="mudarCor('#f1c40f')"></div>
+                <input type="color" id="custom-color" onchange="mudarCor(this.value)" style="width:50px; height:35px; vertical-align:top; cursor:pointer;">
+            </div>
+
+            <h3 style="margin-top:20px; font-size:14px; color:var(--primary);">📏 TAMANHO DA FONTE</h3>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button class="btn-limpar" onclick="mudarFonte(12)" style="flex:1;">PEQUENA</button>
+                <button class="btn-limpar" onclick="mudarFonte(14)" style="flex:1;">MÉDIA</button>
+                <button class="btn-limpar" onclick="mudarFonte(18)" style="flex:1;">GRANDE</button>
+            </div>
+        </div>
+
+        <div class="config-card">
+            <h3 style="margin-top:0; font-size:14px; color:var(--warn);">💾 SEGURANÇA E BACKUP</h3>
+            <p style="font-size:11px; color:#858585;">Exporte seus dados para não perder nada.</p>
+            <button class="btn-salvar" onclick="exportarDados()" style="background:var(--warn); color:#000;">📥 EXPORTAR TUDO (BACKUP)</button>
+            <br><br>
+            <label>Restaurar de um arquivo:</label>
+            <input type="file" id="input-file" accept=".json" onchange="importarDados(this)">
+        </div>
+
+        <div class="config-card" style="border-color:var(--danger);">
+            <h3 style="margin-top:0; font-size:14px; color:var(--danger);">⚠️ ZONA DE PERIGO</h3>
+            <button class="btn-salvar" onclick="resetTotal()" style="background:var(--danger);">🚨 APAGAR TODO O SISTEMA</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+    <script src="banco.js"></script>
+    <script>
+        window.onload = function() {
+            carregarBanco();
+            construirMenu('opcoes');
+            // Carrega o usuário salvo no campo
+            document.getElementById('cfg-github-user').value = db.configGlobal?.githubUser || "";
+        };
+
+        function salvarGithub() {
+            if (!db.configGlobal) db.configGlobal = {};
+            db.configGlobal.githubUser = document.getElementById('cfg-github-user').value.trim();
+            salvarBanco();
+            mostrarToast("Usuário GitHub salvo!");
+        }
+
+        function mudarCor(cor) {
+            db.configGlobal.tema = cor;
+            document.documentElement.style.setProperty('--primary', cor);
+            salvarBanco();
+            mostrarToast("Cor aplicada!");
+        }
+
+        function mudarFonte(tamanho) {
+            db.configGlobal.fonte = tamanho;
+            document.body.style.fontSize = tamanho + 'px';
+            salvarBanco();
+            mostrarToast("Fonte ajustada!");
+        }
+
+        function exportarDados() {
+            let data = localStorage.getItem('rik3d_erp_dados');
+            if(!data) return alert("Não há dados.");
+            let blob = new Blob([data], {type: "application/json"});
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = "Rik3D_Backup.json";
+            a.click();
+        }
+
+        function importarDados(input) {
+            let reader = new FileReader();
+            reader.onload = function(){
+                localStorage.setItem('rik3d_erp_dados', reader.result);
+                alert("Dados restaurados! O app vai reiniciar.");
+                location.reload();
+            };
+            reader.readAsText(input.files[0]);
+        }
+
+        function resetTotal() {
+            let p1 = confirm("AVISO 1: Isso vai apagar TODOS os seus produtos, estoque e clientes. Continua?");
+            if(p1) {
+                let p2 = prompt("AVISO 2: Digite 'APAGAR TUDO' para confirmar:");
+                if(p2 === "APAGAR TUDO") {
+                    localStorage.removeItem('rik3d_erp_dados');
+                    alert("Sistema limpo!");
+                    window.location.href = 'calc.html';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>CRM e Clientes Rik 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .consignado-header { background: var(--input); padding: 15px; border-radius: 4px; border-left: 4px solid var(--primary); margin-bottom: 15px; }
+        .consignado-header h2 { margin: 0 0 5px 0; font-size: 18px; color: var(--primary); text-transform: uppercase; }
+        .vitrine-img-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+
+    <div id="menu-container"></div>
+
+    <div class="aba ativa">
+        
+        <div id="view-lista-clientes">
+            <div class="card-item" style="margin-top: 0; border-left-color: var(--warn);">
+                <h3 style="margin-top: 0; color: var(--warn);">➕ NOVO PARCEIRO / LOJA (MANUAL)</h3>
+                <input type="hidden" id="cli-id" value="">
+                <div class="grid-2">
+                    <div><label>Nome da Loja/Ponto:</label><input type="text" id="cli-loja" placeholder="Ex: Geek Store Shopping"></div>
+                    <div><label>Nome do Dono:</label><input type="text" id="cli-dono" placeholder="Ex: João Silva"></div>
+                </div>
+                <div class="grid-2">
+                    <div><label>WhatsApp (Só Números):</label><input type="text" id="cli-telefone" placeholder="Ex: 5511999999999"></div>
+                    <div><label>Endereço Completo:</label><input type="text" id="cli-endereco" placeholder="Rua, número, cidade..."></div>
+                </div>
+                <div>
+                    <label>Anotações e Acordos:</label>
+                    <textarea id="cli-notas" placeholder="Detalhes da parceria, % de comissão combinada..."></textarea>
+                </div>
+                <div class="grid-2">
+                    <button class="btn-salvar" onclick="salvarCliente()" id="btn-salvar-cli">SALVAR PARCEIRO</button>
+                    <button class="btn-limpar" onclick="limparFormCliente()">LIMPAR CAMPOS</button>
+                </div>
+            </div>
+            
+            <div id="container-clientes-online"></div>
+
+            <h3 style="margin-top: 25px; color: var(--primary);">📋 MEUS PARCEIROS E LOJAS</h3>
+            <input type="text" id="filtro-cliente" placeholder="🔍 Procurar loja ou parceiro..." oninput="renderClientes()" style="margin-bottom:15px; width:100%; padding:10px; border-radius:5px; border:1px solid #555; background:#252525; color:white;">
+            <div id="lista-clientes-container"></div>
+        </div>
+
+        <div id="view-perfil-cliente" style="display:none;">
+            <button class="btn-limpar" onclick="voltarParaLista()" style="margin-top:0; margin-bottom:15px; width:auto; padding:8px 15px;">⬅ VOLTAR À LISTA</button>
+            
+            <div class="consignado-header" id="perfil-header">
+                <h2 id="perfil-nome-loja">Nome da Loja</h2>
+                <div style="font-size:12px; color:#ccc;" id="perfil-info">Dono: ... | Tel: ...</div>
+            </div>
+            
+            <div class="grid-2">
+                <button class="btn-salvar" style="margin:0; background:#25D366; border-color:#128c7e;" onclick="abrirWhats()">💬 FALAR NO WHATSAPP</button>
+                <button class="btn-limpar" style="margin:0; border-color:var(--primary); color:var(--primary);" onclick="gerarLinkPortal()">🔗 COPIAR LINK DO PORTAL DO LOJISTA</button>
+            </div>
+
+            <div class="card-item" style="margin-top:20px; border-color:var(--primary);">
+                <h3 style="margin-top:0; color:var(--primary); font-size:12px; text-transform:uppercase;">📦 Enviar Peças (Consignação)</h3>
+                <div class="grid-2" style="align-items:end;">
+                    <div>
+                        <label>O que quer mandar do seu Box?</label>
+                        <select id="consig-produto" style="margin-bottom:0; width:100%; padding:10px; border-radius:4px; background:#252525; color:white; border:1px solid #555;"></select>
+                    </div>
+                    <div>
+                        <label>Quantidade a Enviar:</label>
+                        <div style="display:flex; gap:10px;">
+                            <input type="number" id="consig-qtd" value="1" min="1" style="margin-bottom:0; width:100%; padding:10px; border-radius:4px; background:#252525; color:white; border:1px solid #555;">
+                            <button class="btn-salvar" style="margin:0; width:100px;" onclick="enviarParaConsignacao()">ENVIAR</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 25px; color: var(--warn); border-bottom:1px solid var(--border); padding-bottom:5px;">🏪 PEÇAS ATUALMENTE NESTA LOJA</h3>
+            <div id="lista-consignados-cliente"></div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+    <script src="banco.js"></script>
+    
+    <script>
+        var clienteAtivoId = null;
+
+        window.onload = function() {
+            carregarBanco();
+            construirMenu('clientes');
+            renderClientes();
+            
+            // Inicia a escuta dos cadastros do site após carregar o banco
+            setTimeout(escutarClientesOnline, 2000);
+        };
+
+        // ==========================================
+        // PUXAR CLIENTES DA VITRINE ONLINE
+        // ==========================================
+        function escutarClientesOnline() {
+            if (typeof firebase !== 'undefined' && firebase.apps.length) {
+                const ref = firebase.database().ref('clientes_online');
+                ref.on('value', (snapshot) => {
+                    const dados = snapshot.val();
+                    renderListaOnline(dados);
+                });
+            }
+        }
+
+        function renderListaOnline(dados) {
+            const container = document.getElementById('container-clientes-online');
+            let html = "";
+            if (!dados) {
+                container.innerHTML = "";
+                return;
+            }
+            
+            html += `<h3 style="margin-top: 25px; color: #25D366; border-bottom: 1px solid #25D366; padding-bottom: 5px;">🌐 NOVOS CADASTROS DA VITRINE</h3>`;
+            html += `<div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 20px;">`;
+            
+            Object.keys(dados).forEach(key => {
+                const c = dados[key];
+                const tipoCor = c.tipo && c.tipo.includes('Atacado') ? 'var(--warn)' : 'var(--primary)';
+                const cJson = encodeURIComponent(JSON.stringify(c));
+                
+                html += `
+                <div class="card-item" style="border-left-color: ${tipoCor}; margin:0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <b style="font-size:1.1em; color:var(--text);">${c.nome}</b> <span style="font-size:10px; background:${tipoCor}; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">${c.tipo}</span><br>
+                            <small style="color:#858585;">WhatsApp: ${c.whatsapp} | Endereço: ${c.endereco}</small>
+                            ${c.cnpj ? `<br><small style="color:#aaa;">CNPJ: ${c.cnpj}</small>` : ''}
+                        </div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-salvar" style="margin:0; padding:8px 15px; font-size:12px; background:#25D366; border:none;" onclick="aprovarCliente('${key}', '${cJson}')">✔ APROVAR</button>
+                            <button class="btn-del" style="margin:0; padding:8px 15px;" onclick="recusarCliente('${key}')">X</button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function aprovarCliente(key, cJsonStr) {
+            const c = JSON.parse(decodeURIComponent(cJsonStr));
+            
+            db.clientes.push({
+                id: Date.now(),
+                loja: c.nome, 
+                dono: c.nome,
+                telefone: c.whatsapp,
+                endereco: c.endereco,
+                notas: `Cadastrado via Vitrine Online (${c.tipo}). CNPJ: ${c.cnpj || 'Não informado'}. Data: ${c.dataCadastro}`
+            });
+            
+            salvarBanco();
+            renderClientes();
+            
+            // Remove do Firebase para não aparecer de novo na fila
+            if(typeof firebase !== 'undefined') {
+                firebase.database().ref('clientes_online/' + key).remove();
+            }
+            mostrarToast("Cliente salvo no seu ERP!");
+        }
+
+        function recusarCliente(key) {
+            if(confirm("Deseja recusar e apagar este cadastro da fila online?")) {
+                firebase.database().ref('clientes_online/' + key).remove();
+                mostrarToast("Cadastro removido da fila.");
+            }
+        }
+
+        // ==========================================
+        // GESTÃO DE CLIENTES LOCAIS (CRM)
+        // ==========================================
+        function renderClientes() {
+            try {
+                var buscaEl = document.getElementById('filtro-cliente');
+                var busca = buscaEl ? buscaEl.value.toLowerCase() : "";
+                var html = "";
+                
+                // Ordena os clientes alfabeticamente
+                var clientesOrdenados = [...db.clientes].sort((a,b) => a.loja.localeCompare(b.loja));
+                
+                for (var i = 0; i < clientesOrdenados.length; i++) {
+                    var c = clientesOrdenados[i];
+                    if (String(c.loja).toLowerCase().includes(busca) || String(c.dono).toLowerCase().includes(busca)) {
+                        
+                        var pecasLojas = db.consignados.filter(function(con) { 
+                            return String(con.clienteId) === String(c.id) && con.qtdAtiva > 0; 
+                        });
+                        
+                        var totalPecas = 0;
+                        for (var j = 0; j < pecasLojas.length; j++) { totalPecas += pecasLojas[j].qtdAtiva; }
+                        
+                        html += `
+                        <div class="card-item" style="border-left-color: var(--warn); cursor:pointer; margin-bottom:10px;" onclick="abrirPerfil(${c.id})">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <b style="font-size:1.2em; color:var(--text);">${c.loja}</b><br>
+                                    <small style="color:#858585;">👤 ${c.dono} | 📦 ${totalPecas} peças ativas na loja</small>
+                                </div>
+                                <button class="btn-del" onclick="apagarCliente(event, ${c.id})" title="Apagar Loja">X</button>
+                            </div>
+                        </div>`;
+                    }
+                }
+                if (html === "") html = "<p style='color:#858585; text-align:center;'>Nenhum parceiro encontrado.</p>";
+                document.getElementById('lista-clientes-container').innerHTML = html;
+            } catch(e){ console.error(e); }
+        }
+
+        function salvarCliente() {
+            var loja = document.getElementById('cli-loja').value.trim();
+            var dono = document.getElementById('cli-dono').value.trim();
+            var telefone = document.getElementById('cli-telefone').value.trim();
+            var endereco = document.getElementById('cli-endereco').value.trim();
+            var notas = document.getElementById('cli-notas').value.trim();
+            var idEdit = document.getElementById('cli-id').value;
+
+            if (!loja || !dono) { alert("A Loja e o Dono são campos obrigatórios."); return; }
+
+            if (idEdit) {
+                var idx = db.clientes.findIndex(function(c) { return String(c.id) === String(idEdit); });
+                if (idx > -1) { 
+                    db.clientes[idx].loja = loja; db.clientes[idx].dono = dono; 
+                    db.clientes[idx].telefone = telefone; db.clientes[idx].endereco = endereco; 
+                    db.clientes[idx].notas = notas; 
+                }
+            } else {
+                db.clientes.push({ id: Date.now(), loja: loja, dono: dono, telefone: telefone, endereco: endereco, notas: notas });
+            }
+            
+            limparFormCliente(); 
+            salvarBanco(); 
+            renderClientes(); 
+            mostrarToast("Parceiro Guardado!");
+        }
+
+        function limparFormCliente() {
+            document.getElementById('cli-id').value = '';
+            document.getElementById('cli-loja').value = '';
+            document.getElementById('cli-dono').value = '';
+            document.getElementById('cli-telefone').value = '';
+            document.getElementById('cli-endereco').value = '';
+            document.getElementById('cli-notas').value = '';
+            document.getElementById('btn-salvar-cli').innerText = 'SALVAR PARCEIRO';
+        }
+
+        function apagarCliente(e, id) {
+            e.stopPropagation();
+            if (confirm("🚨 TEM A CERTEZA?\nIsto vai apagar este parceiro e todo o histórico de consignação associado a ele!")) {
+                db.clientes = db.clientes.filter(function(c) { return String(c.id) !== String(id); });
+                db.consignados = db.consignados.filter(function(con) { return String(con.clienteId) !== String(id); });
+                salvarBanco(); 
+                renderClientes();
+            }
+        }
+
+        // ==========================================
+        // PERFIL DO CLIENTE & CONSIGNAÇÃO
+        // ==========================================
+        function abrirPerfil(id) {
+            var c = db.clientes.find(function(cli) { return String(cli.id) === String(id); }); 
+            if (!c) return;
+            
+            clienteAtivoId = id;
+            document.getElementById('view-lista-clientes').style.display = 'none';
+            document.getElementById('view-perfil-cliente').style.display = 'block';
+            
+            document.getElementById('perfil-nome-loja').innerText = c.loja;
+            document.getElementById('perfil-info').innerText = `Dono: ${c.dono} | WhatsApp: ${c.telefone || 'S/N'}`;
+            
+            var selectHtml = `<option value="">-- Escolha um produto disponível --</option>`;
+            for (var i = 0; i < db.produtos.length; i++) {
+                var p = db.produtos[i];
+                var feito = parseInt(p.feito) || 0; 
+                var vendido = parseInt(p.vendido) || 0;
+                
+                var pecasConsignadas = db.consignados.filter(function(con) { return String(con.produtoId) === String(p.id) && con.qtdAtiva > 0; });
+                var consignadoGlobal = 0; 
+                for (var j = 0; j < pecasConsignadas.length; j++) { consignadoGlobal += pecasConsignadas[j].qtdAtiva; }
+                
+                var emBox = feito - vendido - consignadoGlobal;
+                if (emBox > 0) { 
+                    selectHtml += `<option value="${p.id}">${p.nome} (Pode enviar: ${emBox})</option>`; 
+                }
+            }
+            document.getElementById('consig-produto').innerHTML = selectHtml;
+            renderConsignadosCliente();
+        }
+
+        function voltarParaLista() {
+            clienteAtivoId = null;
+            document.getElementById('view-lista-clientes').style.display = 'block';
+            document.getElementById('view-perfil-cliente').style.display = 'none';
+            renderClientes();
+        }
+
+        function abrirWhats() {
+            var c = db.clientes.find(function(cli) { return String(cli.id) === String(clienteAtivoId); });
+            if (c && c.telefone) { 
+                var num = c.telefone.replace(/\D/g, '');
+                if(num.length < 10) { alert("O número de WhatsApp parece estar incorreto."); return; }
+                window.open(`https://wa.me/${num}`, '_blank'); 
+            } else { 
+                alert("Este parceiro não tem WhatsApp cadastrado."); 
+            }
+        }
+
+        function gerarLinkPortal() {
+            alert("A área do lojista na vitrine online já está ativa! Envie o link de Atacado que está na aba DIVULGAR para o seu cliente.");
+        }
+
+        function enviarParaConsignacao() {
+            var prodId = document.getElementById('consig-produto').value;
+            var qtd = parseInt(document.getElementById('consig-qtd').value) || 0;
+            
+            if (!prodId || qtd <= 0) { alert("Escolha o produto e a quantidade."); return; }
+            
+            var p = db.produtos.find(function(x) { return String(x.id) === String(prodId); }); 
+            if (!p) return;
+            
+            var feito = parseInt(p.feito) || 0; var vendido = parseInt(p.vendido) || 0;
+            var pecasConsignadas = db.consignados.filter(function(con) { return String(con.produtoId) === String(p.id) && con.qtdAtiva > 0; });
+            var consignadoGlobal = 0; 
+            for (var j = 0; j < pecasConsignadas.length; j++) { consignadoGlobal += pecasConsignadas[j].qtdAtiva; }
+            var emBox = feito - vendido - consignadoGlobal;
+
+            if (qtd > emBox) { 
+                alert(`Erro: Você só tem ${emBox} no Box físico.`); 
+                return; 
+            }
+            
+            db.consignados.push({ 
+                id: Date.now(), 
+                clienteId: clienteAtivoId, 
+                produtoId: prodId, 
+                qtdAtiva: qtd, 
+                dataEnvio: new Date().toLocaleDateString() 
+            });
+            
+            salvarBanco(); 
+            abrirPerfil(clienteAtivoId); 
+            mostrarToast(`Peças enviadas!`);
+        }
+
+        function renderConsignadosCliente() {
+            var html = "";
+            var consigs = db.consignados.filter(function(con) { return String(con.clienteId) === String(clienteAtivoId) && con.qtdAtiva > 0; });
+            
+            if (consigs.length === 0) {
+                html = "<p style='color:#858585; text-align:center; padding:20px; border:1px dashed #555; border-radius:4px;'>Nenhuma peça ativa nesta loja no momento.</p>";
+            } else {
+                for (var i = 0; i < consigs.length; i++) {
+                    var con = consigs[i]; 
+                    var p = db.produtos.find(function(x) { return String(x.id) === String(con.produtoId); }); 
+                    if (!p) continue;
+                    
+                    var pVenda = parseFloat(p.precoVenda) || 0; 
+                    var pAtacado = p.precoAtacado !== undefined ? parseFloat(p.precoAtacado) : pVenda;
+                    var imgHTML = p.imagem ? `<img src="${p.imagem}" class="vitrine-img-mini">` : `<div class="vitrine-img-mini"></div>`;
+
+                    html += `
+                    <div class="card-item" style="border-left-color: var(--primary); display:flex; gap:10px; margin-bottom:10px;">
+                        ${imgHTML}
+                        <div style="flex:1;">
+                            <div style="display:flex; justify-content:space-between;">
+                                <b style="font-size:1.1em;">${p.nome}</b>
+                                <span style="color:var(--primary); font-weight:bold;">📦 ${con.qtdAtiva} un.</span>
+                            </div>
+                            <div style="color:#858585; font-size:10px;">Enviado em: ${con.dataEnvio}</div>
+                            <div style="display:flex; gap:5px; margin-top:8px;">
+                                <button class="btn-salvar" style="padding:8px; margin:0; font-size:10px;" onclick="registrarVendaConsignado(${con.id}, ${con.produtoId}, ${con.qtdAtiva})">💲 VENDIDO</button>
+                                <button class="btn-limpar" style="padding:8px; margin:0; font-size:10px;" onclick="devolverConsignado(${con.id})">↩ DEVOLVER</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+            }
+            document.getElementById('lista-consignados-cliente').innerHTML = html;
+        }
+
+        function registrarVendaConsignado(consigId, produtoId, qtdMaxima) {
+            var qtdStr = prompt(`Quantas unidades foram vendidas? (Máx: ${qtdMaxima})`, "1"); 
+            if (!qtdStr) return;
+            var qtdVendida = parseInt(qtdStr); 
+            if (isNaN(qtdVendida) || qtdVendida <= 0 || qtdVendida > qtdMaxima) { alert("Qtd inválida."); return; }
+            
+            var p = db.produtos.find(function(x) { return String(x.id) === String(produtoId); }); 
+            var c = db.clientes.find(function(cli) { return String(cli.id) === String(clienteAtivoId); }); 
+            var con = db.consignados.find(function(x) { return String(x.id) === String(consigId); });
+            if (!p || !con || !c) return;
+
+            var valorCobrado = confirm(`Cobrar PREÇO DE ATACADO (R$ ${parseFloat(p.precoAtacado || p.precoVenda).toFixed(2)})?`) ? parseFloat(p.precoAtacado || p.precoVenda) : parseFloat(p.precoVenda);
+
+            con.qtdAtiva -= qtdVendida; 
+            p.vendido = (parseInt(p.vendido) || 0) + qtdVendida; 
+            
+            db.financas.push({ 
+                id: Date.now(), 
+                desc: `Venda Loja ${c.loja}: ${p.nome}`, 
+                valor: valorCobrado * qtdVendida, 
+                data: new Date().toLocaleDateString() 
+            });
+            
+            salvarBanco(); abrirPerfil(clienteAtivoId); mostrarToast(`Venda lançada no Caixa!`);
+        }
+
+        function devolverConsignado(consigId) {
+            var con = db.consignados.find(function(x) { return String(x.id) === String(consigId); }); 
+            if (!con) return;
+            var qtdStr = prompt(`Quantas peças voltaram ao seu Box?`, con.qtdAtiva); 
+            var qtdDev = parseInt(qtdStr); 
+            if (isNaN(qtdDev) || qtdDev <= 0 || qtdDev > con.qtdAtiva) return;
+            
+            con.qtdAtiva -= qtdDev; 
+            salvarBanco(); abrirPerfil(clienteAtivoId); mostrarToast(`Peças voltaram ao Box!`);
+        }
+    </script>
+</body>
+</html>
