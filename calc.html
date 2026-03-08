@@ -5,9 +5,11 @@
     <title>Calculadora Rik 3D</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .img-input-area { border: 2px dashed #555; background: var(--card); border-radius: 4px; padding: 15px; text-align: center; color: var(--primary); cursor: pointer; position: relative; font-weight: bold;}
+        .galeria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; }
+        .img-input-area { border: 2px dashed #555; background: var(--card); border-radius: 4px; padding: 15px; text-align: center; color: var(--primary); cursor: pointer; position: relative; font-weight: bold; min-height: 80px; display: flex; align-items: center; justify-content: center; flex-direction: column;}
+        .img-input-area span { font-size: 11px; }
         .img-input-area input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; left: 0; top: 0; }
-        .img-area-preview { width: 100%; height: 150px; border-radius: 4px; object-fit: cover; display: none; }
+        .img-area-preview { width: 100%; height: 100px; border-radius: 4px; object-fit: cover; display: none; position: absolute; top: 0; left: 0; }
         .slot-ams { background: rgba(0,0,0,0.1); border-radius: 4px; margin-bottom: 8px; padding: 10px; border-left: 3px solid var(--primary); }
         .color-indicator { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-left: 5px; border: 1px solid #555; vertical-align: middle; }
         .detalhes-custo { background: var(--card); padding: 15px; border-radius: 4px; margin: 15px 0; border: 1px solid var(--border); }
@@ -43,12 +45,29 @@
             <button onclick="gerarDescricaoBasica()" class="btn-limpar" style="padding:8px; font-size:11px; margin-top:5px;">⚡ GERAR TEXTO BÁSICO</button>
         </div>
 
-        <div class="img-input-area" style="margin-top: 15px;">
-            <span id="p-img-text">➕ CLIQUE PARA ADICIONAR FOTO DA PEÇA</span>
-            <input type="file" id="p-img-file" accept="image/*" onchange="previewImage(this)">
-            <img id="p-img-prev" class="img-area-preview">
+        <label style="margin-top: 15px; display: block; font-weight: bold; color: var(--primary);">Galeria de Fotos do Produto</label>
+        <div class="galeria-grid">
+            <div class="img-input-area" style="border-color: var(--primary);">
+                <span id="p-img-text-0">📸 FOTO PRINCIPAL</span>
+                <input type="file" id="p-img-file-0" accept="image/*" onchange="previewImage(this, 0)">
+                <img id="p-img-prev-0" class="img-area-preview">
+            </div>
+            <div class="img-input-area">
+                <span id="p-img-text-1">➕ FOTO EXTRA 1</span>
+                <input type="file" id="p-img-file-1" accept="image/*" onchange="previewImage(this, 1)">
+                <img id="p-img-prev-1" class="img-area-preview">
+            </div>
+            <div class="img-input-area">
+                <span id="p-img-text-2">➕ FOTO EXTRA 2</span>
+                <input type="file" id="p-img-file-2" accept="image/*" onchange="previewImage(this, 2)">
+                <img id="p-img-prev-2" class="img-area-preview">
+            </div>
+            <div class="img-input-area">
+                <span id="p-img-text-3">➕ FOTO EXTRA 3</span>
+                <input type="file" id="p-img-file-3" accept="image/*" onchange="previewImage(this, 3)">
+                <img id="p-img-prev-3" class="img-area-preview">
+            </div>
         </div>
-        
         <fieldset style="border: 1px solid var(--border); border-radius: 4px; margin-top: 15px; padding: 15px;">
             <legend style="color: var(--primary); font-size: 11px; font-weight: bold; text-transform: uppercase; padding: 0 5px;">Filamentos Utilizados</legend>
             <div id="materiais-area"></div>
@@ -114,7 +133,8 @@
     <script src="banco.js"></script>
     
     <script>
-        var base64Image = ""; 
+        // Array para guardar as 4 imagens
+        var imgGaleria = ["", "", "", ""]; 
         var slotsAmsCount = 0;
 
         // Funções de Utilitário locais
@@ -126,7 +146,6 @@
             carregarBanco(); 
             construirMenu('calc'); 
 
-            // Carrega as configurações de taxa salvas
             safeSet('taxa-hora', localStorage.getItem('rik3d_taxa_en') || "1.11");
             safeSet('depreciacao-hora', localStorage.getItem('rik3d_taxa_de') || "0.50");
             safeSet('valor-mao-obra', localStorage.getItem('rik3d_val_mao') || "20.00");
@@ -135,10 +154,9 @@
 
             iniciarCalculadora();
             
-            // Verifica se viemos da página Catálogo para editar um produto
             var idEdit = localStorage.getItem('rik3d_edit_prod_id');
             if (idEdit) {
-                localStorage.removeItem('rik3d_edit_prod_id'); // Limpa a memória
+                localStorage.removeItem('rik3d_edit_prod_id'); 
                 editarProduto(idEdit);
             }
         };
@@ -150,9 +168,7 @@
             renderCategoriasRapidas(); 
         }
 
-        // ==========================================
-        // LEITOR TEXTO DO FATIADOR
-        // ==========================================
+        // LEITOR TEXTO DO FATIADOR (Mantido igual)
         function processarTextoFatiador(text) {
             if (!text) return;
             var statusEl = document.getElementById('ocr-status');
@@ -177,9 +193,7 @@
             }
         }
 
-        // ==========================================
-        // GESTÃO DE ESTOQUE / AMS
-        // ==========================================
+        // GESTÃO DE ESTOQUE / AMS (Mantido igual)
         function addSlotAMS() {
             try {
                 if(slotsAmsCount >= 10) return;
@@ -204,7 +218,6 @@
                     var f = db.estoque[i]; if (!f) continue;
                     var pAtual = f.pesoAtual !== undefined ? parseFloat(f.pesoAtual) : (parseFloat(f.pesoOriginal) || 0);
                     var corStr = String(f.cor || ""); var corHex = corStr.includes('|') ? corStr.split(' | ')[0].trim() : "transparent"; var corNome = corStr.includes('|') ? corStr.split('|')[1].trim() : "Desconhecida";
-                    // Usa o ID como value para salvar
                     opts += `<option value="${f.id}" data-cor="${corHex}">${String(f.marca || 'Sem Marca')} - ${corNome} (${pAtual.toFixed(0)}g)</option>`;
                 }
                 var sels = document.querySelectorAll('.sel-f');
@@ -212,9 +225,7 @@
             } catch(e) {}
         }
 
-        // ==========================================
-        // CÁLCULO MÁGICO 
-        // ==========================================
+        // CÁLCULO MÁGICO (Mantido igual)
         function calc() {
             try {
                 var custoPlasticoTotal = 0;
@@ -290,7 +301,6 @@
             } catch(e) {}
         }
 
-        // Marcar que o campo foi editado à mão
         document.getElementById('venda-text').addEventListener('input', function(){ this.dataset.manual = "true"; calcReverso('varejo'); });
         document.getElementById('atacado-text').addEventListener('input', function(){ this.dataset.manual = "true"; calcReverso('atacado'); });
 
@@ -321,20 +331,24 @@
         }
 
         // ==========================================
-        // GUARDAR NO CATÁLOGO E IMAGENS
+        // NOVA LÓGICA DE MÚLTIPLAS IMAGENS
         // ==========================================
-        function previewImage(input) {
+        function previewImage(input, index) {
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
                 reader.onload = function(e) { 
                     var img = new Image(); 
                     img.onload = function() {
-                        var canvas = document.createElement('canvas'); var width = img.width; var height = img.height; var MAX = 400; 
+                        var canvas = document.createElement('canvas'); var width = img.width; var height = img.height; var MAX = 600; 
                         if (width > height) { if (width > MAX) { height *= MAX / width; width = MAX; } } else { if (height > MAX) { width *= MAX / height; height = MAX; } }
                         canvas.width = width; canvas.height = height; var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-                        base64Image = canvas.toDataURL('image/jpeg', 0.5); 
-                        var pv = document.getElementById('p-img-prev'); if(pv) { pv.src = base64Image; pv.style.display='block'; }
-                        var pt = document.getElementById('p-img-text'); if(pt) { pt.style.display='none'; }
+                        
+                        // Salva no array na posição correta
+                        imgGaleria[index] = canvas.toDataURL('image/jpeg', 0.6); 
+                        
+                        // Atualiza visual
+                        var pv = document.getElementById('p-img-prev-' + index); if(pv) { pv.src = imgGaleria[index]; pv.style.display='block'; }
+                        var pt = document.getElementById('p-img-text-' + index); if(pt) { pt.style.display='none'; }
                     }; 
                     img.src = e.target.result;
                 }; 
@@ -365,7 +379,7 @@
             var coresStr = ""; var sels = document.querySelectorAll('.sel-f');
             for (var i = 0; i < sels.length; i++) { var f = db.estoque.find(function(e) { return String(e.id) === String(sels[i].value); }); if (f) { coresStr += f.cor.split('|')[1].trim() + ", "; } }
             coresStr = coresStr ? coresStr.slice(0,-2) : "Cores variadas";
-            var text = `🔥 Lançamento: *${nome}* 🔥\n\nA peça perfeita para a sua coleção de ${cat}. Impressa com precisão e material Voolt 3D original.\n\n🎨 Cores: ${coresStr}\n\n💰 Apenas R$ ${preco}\n🚀 Enviamos para todo o Brasil!\n\n👇 Chama no Direct!`;
+            var text = `🔥 Lançamento: *${nome}* 🔥\n\nA peça perfeita para a sua coleção de ${cat}.\n\n🎨 Cores: ${coresStr}\n\n💰 Apenas R$ ${preco}\n🚀 Enviamos para todo o Brasil!`;
             safeSet('p-desc', text); mostrarToast("Texto gerado!");
         }
 
@@ -384,35 +398,54 @@
                     if (sel.value != "0" && p > 0) { mats.push({ filId: sel.value, peso: (p / qtdPlateOriginal) }); }
                 }
 
-                var prodObj = { nome: String(nome), categoria: String(cat), descricao: String(descLoja), precoVenda: preco, precoAtacado: precoAtacado, qtdAtacado: qtdMin, custoUnidade: custo, materiais: mats, imagem: base64Image, tempoImp: tempoImp, tempoMan: tempoMan, percLucro: percLucro, percLucroA: percLucroA, qtdPlateOriginal: qtdPlateOriginal, custoExtra: cExtra };
+                // Salva a Principal e cria o Array de Extras (ignorando as caixas vazias)
+                var imgPrincipal = imgGaleria[0];
+                var fotosExtrasArray = [imgGaleria[1], imgGaleria[2], imgGaleria[3]].filter(img => img !== "");
+
+                var prodObj = { nome: String(nome), categoria: String(cat), descricao: String(descLoja), precoVenda: preco, precoAtacado: precoAtacado, qtdAtacado: qtdMin, custoUnidade: custo, materiais: mats, imagem: imgPrincipal, imagensExtras: fotosExtrasArray, tempoImp: tempoImp, tempoMan: tempoMan, percLucro: percLucro, percLucroA: percLucroA, qtdPlateOriginal: qtdPlateOriginal, custoExtra: cExtra };
 
                 if (idEdit) {
                     var idx = db.produtos.findIndex(function(p) { return String(p.id) === String(idEdit); });
-                    if (idx > -1) { prodObj.imagem = base64Image || db.produtos[idx].imagem; db.produtos[idx] = { ...db.produtos[idx], ...prodObj }; }
+                    if (idx > -1) { 
+                        // Se o usuário não trocou a principal, mantém a velha
+                        prodObj.imagem = imgPrincipal || db.produtos[idx].imagem; 
+                        db.produtos[idx] = { ...db.produtos[idx], ...prodObj }; 
+                    }
                 } else {
                     db.produtos.push({ id: Date.now(), feito: 0, vendido: 0, ...prodObj });
                 }
                 
                 limparCalc(); 
-                salvarBanco(); // Salva
+                salvarBanco();
                 mostrarToast("Produto Salvo com Sucesso!");
-                
-                // Redireciona para o Catálogo para ver a obra de arte
                 setTimeout(function(){ window.location.href = 'catalogo.html'; }, 500);
 
             } catch(e) {}
         }
 
-        // CORREÇÃO DAS CORES AQUI: Puxando o filId exato e atualizando o indicator
         function editarProduto(id) {
             try {
                 var p = db.produtos.find(function(x) { return String(x.id) === String(id); }); if (!p) return;
                 limparCalc();
                 safeSet('edit-prod-id', p.id); safeSet('p-nome', p.nome || ""); safeSet('p-categoria', p.categoria || ""); safeSet('p-desc', p.descricao || ""); safeSet('tempo', p.tempoImp); safeSet('tempo-manual', p.tempoMan); safeSet('lucro', p.percLucro); safeSet('lucro-atacado', p.percLucroA); safeSet('custo-extra', p.custoExtra); safeSet('qtd-plate', p.qtdPlateOriginal || 1); safeSet('qtd-min-atacado', p.qtdAtacado);
 
-                base64Image = p.imagem || "";
-                var pv = document.getElementById('p-img-prev'); var pt = document.getElementById('p-img-text'); 
-                if (p.imagem) { if(pv) { pv.src = p.imagem; pv.style.display = 'block'; } if(pt) { pt.style.display = 'none'; } } else { if(pv) { pv.src = ""; pv.style.display = 'none'; } if(pt) { pt.style.display = 'block'; } }
+                // Carrega as imagens antigas para o visual novo
+                imgGaleria[0] = p.imagem || "";
+                imgGaleria[1] = (p.imagensExtras && p.imagensExtras[0]) ? p.imagensExtras[0] : "";
+                imgGaleria[2] = (p.imagensExtras && p.imagensExtras[1]) ? p.imagensExtras[1] : "";
+                imgGaleria[3] = (p.imagensExtras && p.imagensExtras[2]) ? p.imagensExtras[2] : "";
+
+                for(let i=0; i<4; i++) {
+                    var pv = document.getElementById('p-img-prev-' + i);
+                    var pt = document.getElementById('p-img-text-' + i); 
+                    if (imgGaleria[i]) { 
+                        if(pv) { pv.src = imgGaleria[i]; pv.style.display = 'block'; } 
+                        if(pt) { pt.style.display = 'none'; } 
+                    } else { 
+                        if(pv) { pv.src = ""; pv.style.display = 'none'; } 
+                        if(pt) { pt.style.display = 'block'; } 
+                    }
+                }
 
                 var mArea = document.getElementById('materiais-area'); if (mArea) { mArea.innerHTML = ''; }
                 slotsAmsCount = 0; var qP = parseFloat(p.qtdPlateOriginal) || 1;
@@ -421,10 +454,7 @@
                     for (var i = 0; i < p.materiais.length; i++) {
                         var m = p.materiais[i]; addSlotAMS();
                         var selectElement = document.getElementById('sel-f-' + i); var pesoElement = document.getElementById('peso-f-' + i);
-                        if (selectElement) { 
-                            selectElement.value = m.filId; 
-                            updateInd(i); 
-                        }
+                        if (selectElement) { selectElement.value = m.filId; updateInd(i); }
                         if (pesoElement) { var mp = parseFloat(m.peso) || 0; pesoElement.value = parseFloat((mp * qP).toFixed(2)); } 
                     }
                 } else { addSlotAMS(); }
@@ -439,11 +469,16 @@
             safeSet('edit-prod-id', ""); safeSet('p-nome', ""); safeSet('p-categoria', ""); safeSet('p-desc', ""); safeSet('tempo', "1"); safeSet('tempo-manual', "0.5"); safeSet('lucro', "100"); safeSet('lucro-atacado', "60"); safeSet('qtd-plate', "1"); safeSet('custo-extra', "0"); safeSet('venda-text', ""); safeSet('atacado-text', "");
             document.getElementById('venda-text').dataset.manual = "";
             document.getElementById('atacado-text').dataset.manual = "";
-            base64Image = "";
-            var pv = document.getElementById('p-img-prev'); if (pv) { pv.src = ""; pv.style.display = 'none'; }
-            var pt = document.getElementById('p-img-text'); if (pt) { pt.style.display = 'block'; }
+            
+            // Limpa as 4 fotos
+            imgGaleria = ["", "", "", ""];
+            for(let i=0; i<4; i++) {
+                var pv = document.getElementById('p-img-prev-' + i); if (pv) { pv.src = ""; pv.style.display = 'none'; }
+                var pt = document.getElementById('p-img-text-' + i); if (pt) { pt.style.display = 'block'; }
+                var fi = document.getElementById('p-img-file-' + i); if (fi) { fi.value = ""; }
+            }
+
             safeText('btn-salvar-calc', "SALVAR NO CATÁLOGO");
-            var fileInput = document.getElementById('p-img-file'); if (fileInput) { fileInput.value = ""; }
             var ocrStatus = document.getElementById('ocr-status'); if (ocrStatus) { ocrStatus.style.display = 'none'; }
             iniciarCalculadora();
         }
