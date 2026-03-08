@@ -17,42 +17,101 @@ var db = {
     pedidos: [], 
     marcas: [], 
     consignados: [], 
-    configGlobal: { tema: "#007acc", fonte: "13" } 
+    configGlobal: { tema: "#007acc", fonte: "13" },
+    ultimaAtualizacao: 0
 };
 
+// ==========================================
+// 🔄 CARREGAR DADOS (OFFLINE + ONLINE)
+// ==========================================
 function carregarBanco() {
+    // 1. Puxa rápido da memória do aparelho (offline)
     var memoria = localStorage.getItem('rik3d_erp_dados');
     if (memoria) { 
         db = JSON.parse(memoria);
-        // Garante que o visual salvo seja aplicado ao abrir
-        document.documentElement.style.setProperty('--primary', db.configGlobal?.tema || "#007acc");
-        document.body.style.fontSize = (db.configGlobal?.fonte || "13") + 'px';
+        aplicarVisual();
     }
-    setTimeout(conectarFirebase, 1000);
+    
+    // 2. Conecta no Firebase para ver se tem dados mais novos
+    setTimeout(conectarFirebase, 800);
+}
+
+function aplicarVisual() {
+    document.documentElement.style.setProperty('--primary', db.configGlobal?.tema || "#007acc");
+    document.body.style.fontSize = (db.configGlobal?.fonte || "13") + 'px';
 }
 
 function conectarFirebase() {
     if (typeof firebase !== 'undefined') {
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        
+        // Sincroniza o ERP inteiro puxando da nuvem
+        if (navigator.onLine) {
+            firebase.database().ref('erp_dados').once('value').then(function(snapshot) {
+                var dadosNuvem = snapshot.val();
+                // Só atualiza a tela se a nuvem tiver dados mais recentes que o aparelho
+                if (dadosNuvem && dadosNuvem.ultimaAtualizacao > (db.ultimaAtualizacao || 0)) {
+                    db = dadosNuvem;
+                    localStorage.setItem('rik3d_erp_dados', JSON.stringify(db));
+                    aplicarVisual();
+                    // Opcional: recarrega a página para mostrar os dados novos que chegaram
+                    // location.reload(); 
+                }
+            });
+        }
+
+        // Fica vigiando novos pedidos da vitrine
         firebase.database().ref('pedidos_online').on('child_added', function(snap) {
             var p = snap.val();
-            if (p && !p.lido) mostrarToast("🚀 NOVO PEDIDO!");
+            if (p && !p.lido) mostrarToast("🚀 NOVO PEDIDO NA LOJA!");
         });
     }
 }
 
+// ==========================================
+// 💾 SALVAR DADOS (OFFLINE -> ONLINE)
+// ==========================================
 function salvarBanco() {
+    // 1. Salva na memória na hora, com a data/hora exata
+    db.ultimaAtualizacao = Date.now();
     localStorage.setItem('rik3d_erp_dados', JSON.stringify(db));
+    
+    // 2. Se tiver internet, manda pra nuvem. Se não, avisa.
+    if (navigator.onLine) {
+        sincronizarComNuvem();
+    } else {
+        mostrarToast("💾 Salvo offline. Subirá automático depois!");
+    }
+}
+
+function sincronizarComNuvem() {
     if (typeof firebase !== 'undefined' && firebase.apps.length) {
-        // Atualiza a vitrine online sempre que houver alteração
-        firebase.database().ref('vitrine').set({ 
-            produtos: db.produtos, 
-            atualizado: new Date().toLocaleString() 
+        // Envia o ERP inteiro para as suas máquinas conversarem
+        firebase.database().ref('erp_dados').set(db).then(() => {
+            
+            // Também atualiza a vitrine para os clientes
+            firebase.database().ref('vitrine').set({ 
+                produtos: db.produtos, 
+                atualizado: new Date().toLocaleString() 
+            });
+            
+            mostrarToast("☁️ Salvo e sincronizado!");
         });
     }
 }
 
-// MENU ATUALIZADO COM TODAS AS ABAS DO SISTEMA
+// ==========================================
+// 📶 O "OLHEIRO" DE INTERNET (AUTO-SYNC)
+// ==========================================
+window.addEventListener('online', function() {
+    mostrarToast("📶 Internet voltou! Sincronizando sistema...");
+    sincronizarComNuvem(); // Empurra pra nuvem o que você fez offline
+});
+
+
+// ==========================================
+// 🎨 MENU E TOAST (MANTIDOS INTACTOS)
+// ==========================================
 function construirMenu(abaAtiva) {
     var menu = `
     <div id="toast" class="toast">Mensagem</div>
