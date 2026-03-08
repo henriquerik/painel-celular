@@ -54,7 +54,8 @@
 
         <div class="config-card" style="border-color:var(--danger);">
             <h3 style="margin-top:0; font-size:14px; color:var(--danger);">⚠️ ZONA DE PERIGO</h3>
-            <button class="btn-salvar" onclick="resetTotal()" style="background:var(--danger);">🚨 APAGAR TODO O SISTEMA</button>
+            <p style="font-size:11px; color:#858585;">Atenção: Esta ação é irreversível e apaga os dados de todas as máquinas conectadas.</p>
+            <button class="btn-salvar" onclick="resetTotal()" style="background:var(--danger);">🚨 APAGAR TODO O SISTEMA (PC E NUVEM)</button>
         </div>
     </div>
 
@@ -65,7 +66,6 @@
         window.onload = function() {
             carregarBanco();
             construirMenu('opcoes');
-            // Carrega o usuário salvo no campo
             document.getElementById('cfg-github-user').value = db.configGlobal?.githubUser || "";
         };
 
@@ -77,6 +77,7 @@
         }
 
         function mudarCor(cor) {
+            if (!db.configGlobal) db.configGlobal = {};
             db.configGlobal.tema = cor;
             document.documentElement.style.setProperty('--primary', cor);
             salvarBanco();
@@ -84,6 +85,7 @@
         }
 
         function mudarFonte(tamanho) {
+            if (!db.configGlobal) db.configGlobal = {};
             db.configGlobal.fonte = tamanho;
             document.body.style.fontSize = tamanho + 'px';
             salvarBanco();
@@ -105,20 +107,39 @@
             let reader = new FileReader();
             reader.onload = function(){
                 localStorage.setItem('rik3d_erp_dados', reader.result);
-                alert("Dados restaurados! O app vai reiniciar.");
+                // Força a nuvem a receber o backup importado
+                db = JSON.parse(reader.result);
+                if (navigator.onLine && typeof firebase !== 'undefined') {
+                    firebase.database().ref('erp_dados').set(db);
+                    firebase.database().ref('vitrine').set({ produtos: db.produtos, atualizado: new Date().toLocaleString() });
+                }
+                alert("Dados restaurados com sucesso! O sistema vai reiniciar.");
                 location.reload();
             };
             reader.readAsText(input.files[0]);
         }
 
         function resetTotal() {
-            let p1 = confirm("AVISO 1: Isso vai apagar TODOS os seus produtos, estoque e clientes. Continua?");
+            let p1 = confirm("AVISO 1: Isso vai apagar TODOS os seus produtos, estoque e clientes DA NUVEM E DO PC. Tem certeza?");
             if(p1) {
-                let p2 = prompt("AVISO 2: Digite 'APAGAR TUDO' para confirmar:");
+                let p2 = prompt("AVISO 2: Digite 'APAGAR TUDO' para confirmar a exclusão total:");
                 if(p2 === "APAGAR TUDO") {
+                    
+                    // 1. Apaga a memória do Computador
                     localStorage.removeItem('rik3d_erp_dados');
-                    alert("Sistema limpo!");
+                    
+                    // 2. Apaga o banco de dados da Nuvem (Firebase)
+                    if (typeof firebase !== 'undefined' && firebase.apps.length) {
+                        firebase.database().ref('erp_dados').remove();
+                        firebase.database().ref('vitrine').remove();
+                        firebase.database().ref('pedidos_online').remove();
+                        firebase.database().ref('clientes_online').remove();
+                    }
+                    
+                    alert("💥 BOOM! Sistema completamente zerado! A nuvem e o PC estão limpos.");
                     window.location.href = 'calc.html';
+                } else {
+                    alert("Cancelado. A frase foi digitada incorretamente. Nada foi apagado.");
                 }
             }
         }
