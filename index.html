@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Rik 3D ERP</title>
+    <style>
+        :root { --primary: #007acc; --dark: #121212; --card: #1e1e1e; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--dark); color: white; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .login-box { background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid #333; text-align: center; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .login-box h1 { margin-top: 0; color: var(--primary); font-size: 24px; letter-spacing: 1px; }
+        .login-box p { color: #858585; font-size: 14px; margin-bottom: 30px; }
+        input { width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #555; background: #252525; color: white; box-sizing: border-box; font-size: 16px; text-align: center; }
+        input:focus { outline: none; border-color: var(--primary); }
+        button { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; text-transform: uppercase; transition: 0.2s; }
+        button:hover { background: #005f9e; }
+        .erro { color: #ff4d4d; font-size: 12px; margin-top: 10px; display: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <h1>RIK 3D STUDIO</h1>
+        <p>🔒 Painel Administrativo</p>
+        
+        <input type="password" id="senha" placeholder="Digite sua senha" onkeypress="verificarEnter(event)">
+        <button onclick="fazerLogin()">ACESSAR SISTEMA</button>
+        
+        <div id="msg-erro" class="erro">Senha incorreta. Tente novamente.</div>
+    </div>
+
+    <script>
+        // A SUA SENHA DE ACESSO FICA AQUI (Pode mudar para o que quiser)
+        const SENHA_CORRETA = "rik3d2026"; 
+
+        function fazerLogin() {
+            let senhaDigitada = document.getElementById('senha').value;
+            
+            if (senhaDigitada === SENHA_CORRETA) {
+                // Se a senha estiver certa, ele te joga para a Calculadora!
+                window.location.href = "calc.html";
+            } else {
+                // Se errar, mostra o aviso em vermelho
+                document.getElementById('msg-erro').style.display = 'block';
+                document.getElementById('senha').value = '';
+                document.getElementById('senha').focus();
+            }
+        }
+
+        // Permite logar apertando a tecla "Enter" no teclado/celular
+        function verificarEnter(event) {
+            if (event.key === "Enter") {
+                fazerLogin();
+            }
+        }
+    </script>
+</body>
+</html>
