@@ -305,36 +305,56 @@
         function fecharModal() { document.getElementById('modalPedido').style.display = 'none'; }
         function copiarPix() { const input = document.getElementById('chave-pix-copia'); input.select(); document.execCommand("copy"); alert("Chave copiada!"); }
 
-        function finalizarPedido() {
-            const clienteDados = {
-                nome: document.getElementById('c-nome').value.trim(),
-                cnpj: document.getElementById('c-cnpj').value.trim(),
-                whatsapp: document.getElementById('c-whats').value.trim(),
-                endereco: enderecoFormatadoGlobal,
-                tipo: isAtacado ? 'Atacado' : 'Varejo',
-                dataCadastro: new Date().toLocaleString()
-            };
+      function finalizarPedido() {
+            const clienteDados = {
+                nome: document.getElementById('c-nome').value.trim(),
+                cnpj: document.getElementById('c-cnpj').value.trim() || 'N/A', // Evitar campo vazio
+                whatsapp: document.getElementById('c-whats').value.trim(),
+                endereco: enderecoFormatadoGlobal,
+                tipo: isAtacado ? 'Atacado' : 'Varejo',
+                dataCadastro: new Date().toLocaleString()
+            };
 
-            const pedidoDados = {
-                cliente: clienteDados.nome,
-                produto: prodSelecionado.nome,
-                qtd: document.getElementById('c-qtd').value,
-                valorTotal: valorTotalAtual,
-                tipoVenda: clienteDados.tipo,
-                endereco: clienteDados.endereco,
-                data: new Date().toLocaleString(),
-                lido: false
-            };
+            const pedidoDados = {
+                cliente: clienteDados.nome,
+                produto: prodSelecionado.nome,
+                qtd: document.getElementById('c-qtd').value,
+                valorTotal: valorTotalAtual,
+                tipoVenda: clienteDados.tipo,
+                endereco: clienteDados.endereco,
+                data: new Date().toLocaleString(),
+                lido: false
+            };
 
-            firebase.database().ref('pedidos_online').push(pedidoDados);
-            firebase.database().ref('clientes_online').push(clienteDados);
+            // 1. SALVA NO SEU PAINEL DE CONTROLE (FIREBASE)
+            firebase.database().ref('pedidos_online').push(pedidoDados);
+            firebase.database().ref('clientes_online').push(clienteDados);
 
-            let msg = `*NOVO PEDIDO* 🛍️\n\n*Cliente:* ${clienteDados.nome}\n*Endereço:* ${clienteDados.endereco}\n*Produto:* ${prodSelecionado.nome}\n*Qtd:* ${pedidoDados.qtd} un\n*Total:* R$ ${valorTotalAtual.toFixed(2)}\n\n_Já paguei o PIX, segue comprovante:_`;
-            const linkWhats = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
-            
-            fecharModal();
-            window.open(linkWhats, '_blank');
-        }
-    </script>
-</body>
-</html>
+            // 2. ENVIA O AVISO PARA O SEU E-MAIL VIA FORMSUBMIT
+            fetch("https://formsubmit.co/ajax/sr.henrique.silva@gmail.com", {
+                method: "POST",
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    _subject: "🚨 NOVO PEDIDO NA RIK 3D STUDIO!",
+                    "Cliente": clienteDados.nome,
+                    "WhatsApp do Cliente": clienteDados.whatsapp,
+                    "Endereço": clienteDados.endereco,
+                    "Produto": prodSelecionado.nome,
+                    "Quantidade": pedidoDados.qtd,
+                    "Valor Total": `R$ ${valorTotalAtual.toFixed(2)}`,
+                    "Tipo de Venda": clienteDados.tipo
+                })
+            })
+            .then(response => console.log("E-mail de aviso enviado!"))
+            .catch(error => console.log("Erro ao enviar e-mail:", error));
+
+            // 3. REDIRECIONA PARA O SEU WHATSAPP
+            let msg = `*NOVO PEDIDO* 🛍️\n\n*Cliente:* ${clienteDados.nome}\n*Endereço:* ${clienteDados.endereco}\n*Produto:* ${prodSelecionado.nome}\n*Qtd:* ${pedidoDados.qtd} un\n*Total:* R$ ${valorTotalAtual.toFixed(2)}\n\n_Já paguei o PIX, segue comprovante:_`;
+            const linkWhats = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+            
+            fecharModal();
+            window.open(linkWhats, '_blank');
+        }
