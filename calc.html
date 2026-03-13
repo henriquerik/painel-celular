@@ -8,7 +8,7 @@
         .galeria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; }
         .img-input-area { border: 2px dashed #555; background: var(--card); border-radius: 4px; padding: 15px; text-align: center; color: var(--primary); cursor: pointer; position: relative; font-weight: bold; min-height: 80px; display: flex; align-items: center; justify-content: center; flex-direction: column;}
         .img-input-area span { font-size: 11px; }
-        .img-input-area input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; left: 0; top: 0; }
+        .img-input-area input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; left: 0; top: 0; z-index: 2; }
         .img-area-preview { width: 100%; height: 100px; border-radius: 4px; object-fit: cover; display: none; position: absolute; top: 0; left: 0; }
         .slot-ams { background: rgba(0,0,0,0.1); border-radius: 4px; margin-bottom: 8px; padding: 10px; border-left: 3px solid var(--primary); }
         .color-indicator { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-left: 5px; border: 1px solid #555; vertical-align: middle; }
@@ -485,3 +485,4 @@
     </script>
 </body>
 </html>
+
