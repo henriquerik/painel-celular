@@ -8,6 +8,11 @@
         .consignado-header { background: var(--input); padding: 15px; border-radius: 4px; border-left: 4px solid var(--primary); margin-bottom: 15px; }
         .consignado-header h2 { margin: 0 0 5px 0; font-size: 18px; color: var(--primary); text-transform: uppercase; }
         .vitrine-img-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
+        .btn-sync { background: #2ecc71; color: #000; font-weight: bold; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: center;}
+        .btn-sync:hover { background: #27ae60; }
+        .badge-tipo { font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 10px;}
+        .badge-varejo { background: var(--primary); color: white; }
+        .badge-atacado { background: var(--warn); color: black; }
     </style>
 </head>
 <body>
@@ -17,31 +22,61 @@
     <div class="aba ativa">
         
         <div id="view-lista-clientes">
-            <div class="card-item" style="margin-top: 0; border-left-color: var(--warn);">
-                <h3 style="margin-top: 0; color: var(--warn);">➕ NOVO PARCEIRO / LOJA (MANUAL)</h3>
+            
+            <button class="btn-sync" onclick="escutarClientesOnline()">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+                SINCRONIZAR CLIENTES DA LOJA ONLINE
+            </button>
+
+            <div id="container-clientes-online"></div>
+
+            <div class="card-item" style="margin-top: 15px; border-left-color: var(--primary);" id="box-form-cliente">
+                <h3 style="margin-top: 0; color: var(--primary);">➕ NOVO CADASTRO MANUAL</h3>
                 <input type="hidden" id="cli-id" value="">
+                
                 <div class="grid-2">
-                    <div><label>Nome da Loja/Ponto:</label><input type="text" id="cli-loja" placeholder="Ex: Geek Store Shopping"></div>
-                    <div><label>Nome do Dono:</label><input type="text" id="cli-dono" placeholder="Ex: João Silva"></div>
+                    <div>
+                        <label>Tipo de Cadastro:</label>
+                        <select id="cli-tipo" onchange="ajustarCampos()" style="width: 100%; padding: 10px; border-radius: 4px; background: #252525; color: white; border: 1px solid #555;">
+                            <option value="Varejo">👤 Cliente Final (Varejo)</option>
+                            <option value="Atacado">🏪 Lojista / Revenda (Atacado)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label id="lbl-nome">Nome do Cliente:</label>
+                        <input type="text" id="cli-loja" placeholder="Ex: João Silva" style="width: 100%; padding: 10px; border-radius: 4px; background: #252525; color: white; border: 1px solid #555;">
+                    </div>
                 </div>
+                
                 <div class="grid-2">
-                    <div><label>WhatsApp (Só Números):</label><input type="text" id="cli-telefone" placeholder="Ex: 5511999999999"></div>
-                    <div><label>Endereço Completo:</label><input type="text" id="cli-endereco" placeholder="Rua, número, cidade..."></div>
+                    <div id="div-responsavel" style="display:none;">
+                        <label>Nome do Responsável:</label>
+                        <input type="text" id="cli-dono" placeholder="Ex: Maria (Gerente)" style="width: 100%; padding: 10px; border-radius: 4px; background: #252525; color: white; border: 1px solid #555;">
+                    </div>
+                    <div id="div-whats">
+                        <label>WhatsApp (Só Números):</label>
+                        <input type="text" id="cli-telefone" placeholder="Ex: 5511999999999" style="width: 100%; padding: 10px; border-radius: 4px; background: #252525; color: white; border: 1px solid #555;">
+                    </div>
                 </div>
-                <div>
-                    <label>Anotações e Acordos:</label>
-                    <textarea id="cli-notas" placeholder="Detalhes da parceria, % de comissão combinada..."></textarea>
+
+                <div style="margin-top: 10px;">
+                    <label>Endereço Completo:</label>
+                    <input type="text" id="cli-endereco" placeholder="Rua, número, bairro, cidade..." style="width: 100%; padding: 10px; border-radius: 4px; background: #252525; color: white; border: 1px solid #555;">
                 </div>
-                <div class="grid-2">
-                    <button class="btn-salvar" onclick="salvarCliente()" id="btn-salvar-cli">SALVAR PARCEIRO</button>
+                
+                <div style="margin-top: 10px;">
+                    <label id="lbl-notas">Anotações / Preferências:</label>
+                    <textarea id="cli-notas" placeholder="Cores favoritas, detalhes do pedido..." style="width: 100%; padding: 10px; border-radius: 4px; background: #252525; color: white; border: 1px solid #555;"></textarea>
+                </div>
+                
+                <div class="grid-2" style="margin-top: 15px;">
+                    <button class="btn-salvar" onclick="salvarCliente()" id="btn-salvar-cli">SALVAR CADASTRO</button>
                     <button class="btn-limpar" onclick="limparFormCliente()">LIMPAR CAMPOS</button>
                 </div>
             </div>
             
-            <div id="container-clientes-online"></div>
-
-            <h3 style="margin-top: 25px; color: var(--primary);">📋 MEUS PARCEIROS E LOJAS</h3>
-            <input type="text" id="filtro-cliente" placeholder="🔍 Procurar loja ou parceiro..." oninput="renderClientes()" style="margin-bottom:15px; width:100%; padding:10px; border-radius:5px; border:1px solid #555; background:#252525; color:white;">
+            <h3 style="margin-top: 25px; color: var(--primary);">📋 MEUS CLIENTES E PARCEIROS</h3>
+            <input type="text" id="filtro-cliente" placeholder="🔍 Procurar cliente ou loja..." oninput="renderClientes()" style="margin-bottom:15px; width:100%; padding:10px; border-radius:5px; border:1px solid #555; background:#252525; color:white;">
             <div id="lista-clientes-container"></div>
         </div>
 
@@ -51,6 +86,7 @@
             <div class="consignado-header" id="perfil-header">
                 <h2 id="perfil-nome-loja">Nome da Loja</h2>
                 <div style="font-size:12px; color:#ccc;" id="perfil-info">Dono: ... | Tel: ...</div>
+                <div style="font-size:12px; color:#aaa; margin-top: 5px;" id="perfil-notas">...</div>
             </div>
             
             <div class="grid-2">
@@ -58,11 +94,11 @@
                 <button class="btn-limpar" style="margin:0; border-color:var(--primary); color:var(--primary);" onclick="gerarLinkPortal()">🔗 COPIAR LINK DO PORTAL DO LOJISTA</button>
             </div>
 
-            <div class="card-item" style="margin-top:20px; border-color:var(--primary);">
+            <div class="card-item" style="margin-top:20px; border-color:var(--primary);" id="box-consignacao">
                 <h3 style="margin-top:0; color:var(--primary); font-size:12px; text-transform:uppercase;">📦 Enviar Peças (Consignação)</h3>
                 <div class="grid-2" style="align-items:end;">
                     <div>
-                        <label>O que quer mandar do seu Box?</label>
+                        <label>O que quer mandar do seu Estoque?</label>
                         <select id="consig-produto" style="margin-bottom:0; width:100%; padding:10px; border-radius:4px; background:#252525; color:white; border:1px solid #555;"></select>
                     </div>
                     <div>
@@ -75,7 +111,7 @@
                 </div>
             </div>
 
-            <h3 style="margin-top: 25px; color: var(--warn); border-bottom:1px solid var(--border); padding-bottom:5px;">🏪 PEÇAS ATUALMENTE NESTA LOJA</h3>
+            <h3 style="margin-top: 25px; color: var(--warn); border-bottom:1px solid var(--border); padding-bottom:5px;" id="titulo-consignados">🏪 PEÇAS ATUALMENTE COM ESTE CLIENTE/LOJA</h3>
             <div id="lista-consignados-cliente"></div>
         </div>
     </div>
@@ -90,46 +126,73 @@
         window.onload = function() {
             carregarBanco();
             construirMenu('clientes');
+            if(!db.consignados) db.consignados = [];
+            ajustarCampos(); // Deixa o formulário no formato certo logo que abre
             renderClientes();
-            
-            // Inicia a escuta dos cadastros do site após carregar o banco
-            setTimeout(escutarClientesOnline, 2000);
         };
+
+        // ==========================================
+        // MÁGICA DO FORMULÁRIO INTELIGENTE
+        // ==========================================
+        function ajustarCampos() {
+            var tipo = document.getElementById('cli-tipo').value;
+            var boxForm = document.getElementById('box-form-cliente');
+            
+            if (tipo === 'Atacado') {
+                boxForm.style.borderLeftColor = 'var(--warn)';
+                document.getElementById('lbl-nome').innerText = "Nome da Empresa / Loja:";
+                document.getElementById('cli-loja').placeholder = "Ex: Geek Store 3D";
+                document.getElementById('div-responsavel').style.display = "block";
+                document.getElementById('lbl-notas').innerText = "Anotações / CNPJ / Acordos Comerciais:";
+            } else {
+                boxForm.style.borderLeftColor = 'var(--primary)';
+                document.getElementById('lbl-nome').innerText = "Nome Completo do Cliente:";
+                document.getElementById('cli-loja').placeholder = "Ex: João Silva";
+                document.getElementById('div-responsavel').style.display = "none";
+                document.getElementById('cli-dono').value = ""; // Limpa se esconder
+                document.getElementById('lbl-notas').innerText = "Anotações / Preferências (Ex: Gosta de azul):";
+            }
+        }
 
         // ==========================================
         // PUXAR CLIENTES DA VITRINE ONLINE
         // ==========================================
         function escutarClientesOnline() {
-            if (typeof firebase !== 'undefined' && firebase.apps.length) {
-                const ref = firebase.database().ref('clientes_online');
-                ref.on('value', (snapshot) => {
-                    const dados = snapshot.val();
-                    renderListaOnline(dados);
-                });
+            if (typeof firebase === 'undefined' || !navigator.onLine) {
+                alert("Verifique a internet e tente novamente.");
+                return;
             }
+            mostrarToast("Verificando cadastros da Vitrine...");
+            
+            const ref = firebase.database().ref('clientes_online');
+            ref.once('value', (snapshot) => {
+                const dados = snapshot.val();
+                if(dados) {
+                    renderListaOnline(dados);
+                } else {
+                    mostrarToast("Nenhum cadastro pendente na fila.");
+                    document.getElementById('container-clientes-online').innerHTML = "";
+                }
+            });
         }
 
         function renderListaOnline(dados) {
             const container = document.getElementById('container-clientes-online');
-            let html = "";
-            if (!dados) {
-                container.innerHTML = "";
-                return;
-            }
-            
-            html += `<h3 style="margin-top: 25px; color: #25D366; border-bottom: 1px solid #25D366; padding-bottom: 5px;">🌐 NOVOS CADASTROS DA VITRINE</h3>`;
+            let html = `<h3 style="margin-top: 10px; color: #25D366; border-bottom: 1px solid #25D366; padding-bottom: 5px;">🌐 FILA DE APROVAÇÃO (VITRINE)</h3>`;
             html += `<div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 20px;">`;
             
             Object.keys(dados).forEach(key => {
                 const c = dados[key];
-                const tipoCor = c.tipo && c.tipo.includes('Atacado') ? 'var(--warn)' : 'var(--primary)';
+                const isAtacado = c.tipo && c.tipo.includes('Atacado');
+                const tipoCor = isAtacado ? 'var(--warn)' : 'var(--primary)';
+                const badgeTxt = isAtacado ? 'LOJISTA / ATACADO' : 'VAREJO';
                 const cJson = encodeURIComponent(JSON.stringify(c));
                 
                 html += `
                 <div class="card-item" style="border-left-color: ${tipoCor}; margin:0;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div>
-                            <b style="font-size:1.1em; color:var(--text);">${c.nome}</b> <span style="font-size:10px; background:${tipoCor}; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">${c.tipo}</span><br>
+                            <b style="font-size:1.1em; color:var(--text);">${c.nome}</b> <span style="font-size:10px; background:${tipoCor}; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">${badgeTxt}</span><br>
                             <small style="color:#858585;">WhatsApp: ${c.whatsapp} | Endereço: ${c.endereco}</small>
                             ${c.cnpj ? `<br><small style="color:#aaa;">CNPJ: ${c.cnpj}</small>` : ''}
                         </div>
@@ -147,47 +210,57 @@
         function aprovarCliente(key, cJsonStr) {
             const c = JSON.parse(decodeURIComponent(cJsonStr));
             
+            let jaExiste = db.clientes.some(cli => cli.telefone === c.whatsapp);
+            if(jaExiste) {
+                alert("Este WhatsApp já está cadastrado na sua base.");
+                firebase.database().ref('clientes_online/' + key).remove();
+                document.getElementById('container-clientes-online').innerHTML = "";
+                return;
+            }
+
             db.clientes.push({
                 id: Date.now(),
+                tipo: c.tipo || 'Varejo',
                 loja: c.nome, 
-                dono: c.nome,
+                dono: c.nome, // Se for varejo, o dono é a própria pessoa
                 telefone: c.whatsapp,
                 endereco: c.endereco,
-                notas: `Cadastrado via Vitrine Online (${c.tipo}). CNPJ: ${c.cnpj || 'Não informado'}. Data: ${c.dataCadastro}`
+                notas: `Cadastrado via Vitrine Online. CNPJ: ${c.cnpj || 'Não informado'}. Data: ${c.dataCadastro || new Date().toLocaleDateString()}`
             });
             
             salvarBanco();
             renderClientes();
             
-            // Remove do Firebase para não aparecer de novo na fila
             if(typeof firebase !== 'undefined') {
                 firebase.database().ref('clientes_online/' + key).remove();
             }
-            mostrarToast("Cliente salvo no seu ERP!");
+            mostrarToast("Cadastro salvo na sua Agenda!");
+            document.getElementById('container-clientes-online').innerHTML = ""; 
         }
 
         function recusarCliente(key) {
             if(confirm("Deseja recusar e apagar este cadastro da fila online?")) {
                 firebase.database().ref('clientes_online/' + key).remove();
-                mostrarToast("Cadastro removido da fila.");
+                mostrarToast("Cadastro ignorado.");
+                document.getElementById('container-clientes-online').innerHTML = "";
             }
         }
 
         // ==========================================
-        // GESTÃO DE CLIENTES LOCAIS (CRM)
+        // GESTÃO DE CLIENTES LOCAIS (CRM + CONSIGNAÇÃO)
         // ==========================================
         function renderClientes() {
             try {
+                if(!db.clientes) db.clientes = [];
                 var buscaEl = document.getElementById('filtro-cliente');
                 var busca = buscaEl ? buscaEl.value.toLowerCase() : "";
                 var html = "";
                 
-                // Ordena os clientes alfabeticamente
                 var clientesOrdenados = [...db.clientes].sort((a,b) => a.loja.localeCompare(b.loja));
                 
                 for (var i = 0; i < clientesOrdenados.length; i++) {
                     var c = clientesOrdenados[i];
-                    if (String(c.loja).toLowerCase().includes(busca) || String(c.dono).toLowerCase().includes(busca)) {
+                    if (String(c.loja).toLowerCase().includes(busca) || String(c.dono || "").toLowerCase().includes(busca)) {
                         
                         var pecasLojas = db.consignados.filter(function(con) { 
                             return String(con.clienteId) === String(c.id) && con.qtdAtiva > 0; 
@@ -196,24 +269,35 @@
                         var totalPecas = 0;
                         for (var j = 0; j < pecasLojas.length; j++) { totalPecas += pecasLojas[j].qtdAtiva; }
                         
+                        // Verifica o tipo para pintar o Card
+                        let tipoCad = c.tipo || ( ((c.notas || "").toLowerCase().includes("atacado") || totalPecas > 0) ? 'Atacado' : 'Varejo' );
+                        let classBadge = tipoCad === 'Atacado' ? 'badge-atacado' : 'badge-varejo';
+                        let textoBadge = tipoCad === 'Atacado' ? 'LOJISTA / ATACADO' : 'CLIENTE VAREJO';
+                        let corBorda = tipoCad === 'Atacado' ? 'var(--warn)' : 'var(--primary)';
+                        
+                        let txtResponsavel = (tipoCad === 'Atacado' && c.dono) ? `👤 Resp: ${c.dono} | ` : '';
+                        let txtPecas = tipoCad === 'Atacado' ? `📦 ${totalPecas} peças ativas na loja` : `🛍️ Compra para uso próprio`;
+
                         html += `
-                        <div class="card-item" style="border-left-color: var(--warn); cursor:pointer; margin-bottom:10px;" onclick="abrirPerfil(${c.id})">
+                        <div class="card-item" style="border-left-color: ${corBorda}; cursor:pointer; margin-bottom:10px;" onclick="abrirPerfil(${c.id})">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <div>
-                                    <b style="font-size:1.2em; color:var(--text);">${c.loja}</b><br>
-                                    <small style="color:#858585;">👤 ${c.dono} | 📦 ${totalPecas} peças ativas na loja</small>
+                                    <b style="font-size:1.2em; color:var(--text);">${c.loja}</b>
+                                    <span class="badge-tipo ${classBadge}">${textoBadge}</span><br>
+                                    <small style="color:#858585;">${txtResponsavel}${txtPecas}</small>
                                 </div>
-                                <button class="btn-del" onclick="apagarCliente(event, ${c.id})" title="Apagar Loja">X</button>
+                                <button class="btn-del" onclick="apagarCliente(event, ${c.id})" title="Apagar Cadastro">X</button>
                             </div>
                         </div>`;
                     }
                 }
-                if (html === "") html = "<p style='color:#858585; text-align:center;'>Nenhum parceiro encontrado.</p>";
+                if (html === "") html = "<p style='color:#858585; text-align:center;'>Nenhum cadastro encontrado.</p>";
                 document.getElementById('lista-clientes-container').innerHTML = html;
             } catch(e){ console.error(e); }
         }
 
         function salvarCliente() {
+            var tipo = document.getElementById('cli-tipo').value;
             var loja = document.getElementById('cli-loja').value.trim();
             var dono = document.getElementById('cli-dono').value.trim();
             var telefone = document.getElementById('cli-telefone').value.trim();
@@ -221,38 +305,54 @@
             var notas = document.getElementById('cli-notas').value.trim();
             var idEdit = document.getElementById('cli-id').value;
 
-            if (!loja || !dono) { alert("A Loja e o Dono são campos obrigatórios."); return; }
+            if (!loja) { alert("O Nome do Cliente/Loja é obrigatório."); return; }
+            
+            // Se for varejo e não preencheu dono, o dono é ele mesmo
+            if (tipo === 'Varejo' && !dono) dono = loja;
 
             if (idEdit) {
                 var idx = db.clientes.findIndex(function(c) { return String(c.id) === String(idEdit); });
                 if (idx > -1) { 
-                    db.clientes[idx].loja = loja; db.clientes[idx].dono = dono; 
-                    db.clientes[idx].telefone = telefone; db.clientes[idx].endereco = endereco; 
+                    db.clientes[idx].tipo = tipo;
+                    db.clientes[idx].loja = loja; 
+                    db.clientes[idx].dono = dono; 
+                    db.clientes[idx].telefone = telefone; 
+                    db.clientes[idx].endereco = endereco; 
                     db.clientes[idx].notas = notas; 
                 }
             } else {
-                db.clientes.push({ id: Date.now(), loja: loja, dono: dono, telefone: telefone, endereco: endereco, notas: notas });
+                db.clientes.push({ 
+                    id: Date.now(), 
+                    tipo: tipo,
+                    loja: loja, 
+                    dono: dono, 
+                    telefone: telefone, 
+                    endereco: endereco, 
+                    notas: notas 
+                });
             }
             
             limparFormCliente(); 
             salvarBanco(); 
             renderClientes(); 
-            mostrarToast("Parceiro Guardado!");
+            mostrarToast("Cadastro Salvo!");
         }
 
         function limparFormCliente() {
             document.getElementById('cli-id').value = '';
+            document.getElementById('cli-tipo').value = 'Varejo';
             document.getElementById('cli-loja').value = '';
             document.getElementById('cli-dono').value = '';
             document.getElementById('cli-telefone').value = '';
             document.getElementById('cli-endereco').value = '';
             document.getElementById('cli-notas').value = '';
-            document.getElementById('btn-salvar-cli').innerText = 'SALVAR PARCEIRO';
+            document.getElementById('btn-salvar-cli').innerText = 'SALVAR CADASTRO';
+            ajustarCampos();
         }
 
         function apagarCliente(e, id) {
             e.stopPropagation();
-            if (confirm("🚨 TEM A CERTEZA?\nIsto vai apagar este parceiro e todo o histórico de consignação associado a ele!")) {
+            if (confirm("🚨 TEM A CERTEZA?\nIsto vai apagar este cadastro e todo o histórico associado a ele!")) {
                 db.clientes = db.clientes.filter(function(c) { return String(c.id) !== String(id); });
                 db.consignados = db.consignados.filter(function(con) { return String(con.clienteId) !== String(id); });
                 salvarBanco(); 
@@ -271,10 +371,27 @@
             document.getElementById('view-lista-clientes').style.display = 'none';
             document.getElementById('view-perfil-cliente').style.display = 'block';
             
-            document.getElementById('perfil-nome-loja').innerText = c.loja;
-            document.getElementById('perfil-info').innerText = `Dono: ${c.dono} | WhatsApp: ${c.telefone || 'S/N'}`;
+            let tipoCad = c.tipo || ( ((c.notas || "").toLowerCase().includes("atacado")) ? 'Atacado' : 'Varejo' );
+
+            // Ajusta o visual do perfil dependendo de quem é
+            let infoDono = (tipoCad === 'Atacado' && c.dono !== c.loja) ? `Resp: ${c.dono} | ` : '';
             
-            var selectHtml = `<option value="">-- Escolha um produto disponível --</option>`;
+            document.getElementById('perfil-header').style.borderLeftColor = tipoCad === 'Atacado' ? 'var(--warn)' : 'var(--primary)';
+            document.getElementById('perfil-nome-loja').innerText = c.loja;
+            document.getElementById('perfil-nome-loja').style.color = tipoCad === 'Atacado' ? 'var(--warn)' : 'var(--primary)';
+            document.getElementById('perfil-info').innerText = `${infoDono}WhatsApp: ${c.telefone || 'Não informado'}`;
+            document.getElementById('perfil-notas').innerText = `Anotações: ${c.notas || 'Nenhuma.'}`;
+            
+            // Se for Varejo, podemos esconder a parte de enviar consignação para simplificar a vida
+            if (tipoCad === 'Varejo') {
+                document.getElementById('box-consignacao').style.display = 'none';
+                document.getElementById('titulo-consignados').innerText = "📦 HISTÓRICO DE PEÇAS DESTE CLIENTE";
+            } else {
+                document.getElementById('box-consignacao').style.display = 'block';
+                document.getElementById('titulo-consignados').innerText = "🏪 PEÇAS ATUALMENTE NESTA LOJA/REVENDA";
+            }
+            
+            var selectHtml = `<option value="">-- Escolha um produto do seu estoque --</option>`;
             for (var i = 0; i < db.produtos.length; i++) {
                 var p = db.produtos[i];
                 var feito = parseInt(p.feito) || 0; 
@@ -305,9 +422,9 @@
             if (c && c.telefone) { 
                 var num = c.telefone.replace(/\D/g, '');
                 if(num.length < 10) { alert("O número de WhatsApp parece estar incorreto."); return; }
-                window.open(`https://wa.me/${num}`, '_blank'); 
+                window.open(`https://wa.me/55${num}`, '_blank'); 
             } else { 
-                alert("Este parceiro não tem WhatsApp cadastrado."); 
+                alert("Este cliente não tem WhatsApp cadastrado."); 
             }
         }
 
@@ -331,7 +448,7 @@
             var emBox = feito - vendido - consignadoGlobal;
 
             if (qtd > emBox) { 
-                alert(`Erro: Você só tem ${emBox} no Box físico.`); 
+                alert(`Erro: Você só tem ${emBox} unidades prontas no seu Box físico.`); 
                 return; 
             }
             
@@ -345,7 +462,7 @@
             
             salvarBanco(); 
             abrirPerfil(clienteAtivoId); 
-            mostrarToast(`Peças enviadas!`);
+            mostrarToast(`Peças enviadas para a Loja!`);
         }
 
         function renderConsignadosCliente() {
@@ -353,7 +470,7 @@
             var consigs = db.consignados.filter(function(con) { return String(con.clienteId) === String(clienteAtivoId) && con.qtdAtiva > 0; });
             
             if (consigs.length === 0) {
-                html = "<p style='color:#858585; text-align:center; padding:20px; border:1px dashed #555; border-radius:4px;'>Nenhuma peça ativa nesta loja no momento.</p>";
+                html = "<p style='color:#858585; text-align:center; padding:20px; border:1px dashed #555; border-radius:4px;'>Nenhuma peça ativa com este cadastro no momento.</p>";
             } else {
                 for (var i = 0; i < consigs.length; i++) {
                     var con = consigs[i]; 
@@ -374,8 +491,8 @@
                             </div>
                             <div style="color:#858585; font-size:10px;">Enviado em: ${con.dataEnvio}</div>
                             <div style="display:flex; gap:5px; margin-top:8px;">
-                                <button class="btn-salvar" style="padding:8px; margin:0; font-size:10px;" onclick="registrarVendaConsignado(${con.id}, ${con.produtoId}, ${con.qtdAtiva})">💲 VENDIDO</button>
-                                <button class="btn-limpar" style="padding:8px; margin:0; font-size:10px;" onclick="devolverConsignado(${con.id})">↩ DEVOLVER</button>
+                                <button class="btn-salvar" style="padding:8px; margin:0; font-size:10px; flex:1;" onclick="registrarVendaConsignado(${con.id}, ${con.produtoId}, ${con.qtdAtiva})">💲 VENDIDO (CAIXA)</button>
+                                <button class="btn-limpar" style="padding:8px; margin:0; font-size:10px; flex:1;" onclick="devolverConsignado(${con.id})">↩ DEVOLVER</button>
                             </div>
                         </div>
                     </div>`;
@@ -385,40 +502,42 @@
         }
 
         function registrarVendaConsignado(consigId, produtoId, qtdMaxima) {
-            var qtdStr = prompt(`Quantas unidades foram vendidas? (Máx: ${qtdMaxima})`, "1"); 
+            var qtdStr = prompt(`Quantas unidades esta loja/cliente vendeu? (Máx: ${qtdMaxima})`, "1"); 
             if (!qtdStr) return;
             var qtdVendida = parseInt(qtdStr); 
-            if (isNaN(qtdVendida) || qtdVendida <= 0 || qtdVendida > qtdMaxima) { alert("Qtd inválida."); return; }
+            if (isNaN(qtdVendida) || qtdVendida <= 0 || qtdVendida > qtdMaxima) { alert("Quantidade inválida."); return; }
             
             var p = db.produtos.find(function(x) { return String(x.id) === String(produtoId); }); 
             var c = db.clientes.find(function(cli) { return String(cli.id) === String(clienteAtivoId); }); 
             var con = db.consignados.find(function(x) { return String(x.id) === String(consigId); });
             if (!p || !con || !c) return;
 
-            var valorCobrado = confirm(`Cobrar PREÇO DE ATACADO (R$ ${parseFloat(p.precoAtacado || p.precoVenda).toFixed(2)})?`) ? parseFloat(p.precoAtacado || p.precoVenda) : parseFloat(p.precoVenda);
+            var precoBase = parseFloat(p.precoAtacado || p.precoVenda).toFixed(2);
+            var valorCobrado = confirm(`Deseja lançar no CAIXA o valor base de Atacado (R$ ${precoBase}) por unidade? Se clicar em Cancelar, será lançado o valor de Varejo.`) ? parseFloat(p.precoAtacado || p.precoVenda) : parseFloat(p.precoVenda);
 
             con.qtdAtiva -= qtdVendida; 
             p.vendido = (parseInt(p.vendido) || 0) + qtdVendida; 
             
+            if(!db.financas) db.financas = [];
             db.financas.push({ 
                 id: Date.now(), 
-                desc: `Venda Loja ${c.loja}: ${p.nome}`, 
+                desc: `Venda Consignado/Loja ${c.loja}: ${p.nome}`, 
                 valor: valorCobrado * qtdVendida, 
                 data: new Date().toLocaleDateString() 
             });
             
-            salvarBanco(); abrirPerfil(clienteAtivoId); mostrarToast(`Venda lançada no Caixa!`);
+            salvarBanco(); abrirPerfil(clienteAtivoId); mostrarToast(`Dinheiro lançado no Caixa!`);
         }
 
         function devolverConsignado(consigId) {
             var con = db.consignados.find(function(x) { return String(x.id) === String(consigId); }); 
             if (!con) return;
-            var qtdStr = prompt(`Quantas peças voltaram ao seu Box?`, con.qtdAtiva); 
+            var qtdStr = prompt(`Quantas peças não venderam e voltaram ao seu Box?`, con.qtdAtiva); 
             var qtdDev = parseInt(qtdStr); 
             if (isNaN(qtdDev) || qtdDev <= 0 || qtdDev > con.qtdAtiva) return;
             
             con.qtdAtiva -= qtdDev; 
-            salvarBanco(); abrirPerfil(clienteAtivoId); mostrarToast(`Peças voltaram ao Box!`);
+            salvarBanco(); abrirPerfil(clienteAtivoId); mostrarToast(`Peças voltaram ao seu Estoque Físico!`);
         }
     </script>
 </body>
