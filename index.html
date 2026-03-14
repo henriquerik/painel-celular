@@ -17,13 +17,16 @@
       s.parentNode.insertBefore(t,s)}(window, document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
       
+      // INICIALIZANDO OS SEUS TRÊS PIXELS AO MESMO TEMPO:
       fbq('init', '470580493048375'); 
       fbq('init', '2913548412054326'); 
+      fbq('init', '932442392855131'); // <-- O SEU NOVO PIXEL AQUI!
       fbq('track', 'PageView');
     </script>
     <noscript>
       <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=470580493048375&ev=PageView&noscript=1" />
       <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2913548412054326&ev=PageView&noscript=1" />
+      <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=932442392855131&ev=PageView&noscript=1" />
     </noscript>
     <style>
         :root { --primary: #007acc; --dark: #121212; --card: #1e1e1e; --warn: #f1c40f; }
