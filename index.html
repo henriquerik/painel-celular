@@ -17,7 +17,6 @@
       s.parentNode.insertBefore(t,s)}(window, document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
       
-      // INICIALIZANDO OS SEUS DOIS PIXELS AO MESMO TEMPO:
       fbq('init', '470580493048375'); 
       fbq('init', '2913548412054326'); 
       fbq('track', 'PageView');
@@ -30,7 +29,14 @@
         :root { --primary: #007acc; --dark: #121212; --card: #1e1e1e; --warn: #f1c40f; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--dark); color: white; margin: 0; padding-bottom: 50px; }
         header { background: var(--card); padding: 20px; text-align: center; border-bottom: 3px solid var(--primary); }
-        .vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 15px; }
+        
+        /* ESTILOS DA BARRA DE BUSCA */
+        .filtros-container { display: flex; gap: 10px; padding: 15px; max-width: 1200px; margin: 0 auto; flex-wrap: wrap; }
+        .busca-input { flex: 2; min-width: 200px; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; font-size: 14px; font-family: inherit; }
+        .busca-input:focus { border-color: var(--primary); outline: none; }
+        .categoria-select { flex: 1; min-width: 150px; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; font-size: 14px; font-family: inherit; cursor: pointer; }
+
+        .vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 0 15px 15px 15px; max-width: 1200px; margin: 0 auto; }
         .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #333; display: flex; flex-direction: column; }
         
         .carousel-container { position: relative; width: 100%; height: 160px; overflow: hidden; background: #252525; }
@@ -42,6 +48,7 @@
         .carousel-btn.right { right: 5px; }
 
         .p-info { padding: 12px; flex-grow: 1; }
+        .p-categoria { font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 3px; }
         .p-nome { font-weight: bold; font-size: 14px; color: #eee; height: 34px; overflow: hidden; }
         .p-preco { font-size: 20px; font-weight: bold; margin-top: 5px; }
         .preco-varejo { color: var(--primary); }
@@ -67,6 +74,13 @@
         <h1 style="margin:0; letter-spacing: 1px;">RIK 3D STUDIO</h1>
         <p style="font-size:12px; opacity:0.6; margin-top:5px;" id="sub-header">Carregando catálogo...</p>
     </header>
+
+    <div class="filtros-container">
+        <input type="text" id="busca-vitrine" class="busca-input" placeholder="🔍 Buscar por nome do produto..." oninput="filtrarVitrine()">
+        <select id="categoria-vitrine" class="categoria-select" onchange="filtrarVitrine()">
+            <option value="">Todas as Categorias</option>
+            </select>
+    </div>
 
     <div class="vitrine" id="lista-vitrine"></div>
 
@@ -152,6 +166,7 @@
         let valorUnitarioAtual = 0;
         let valorTotalAtual = 0;
         let enderecoFormatadoGlobal = "";
+        let bancoProdutosGlobal = []; // Guarda todos os produtos para o filtro funcionar
 
         const carrosselIndex = {};
         function moverCarrossel(id, direcao) {
@@ -174,19 +189,58 @@
         }
 
         const dbRef = firebase.database().ref('vitrine/produtos');
+        
+        // 🔄 OUVINTE DO FIREBASE
         dbRef.on('value', (snapshot) => {
-            const produtos = snapshot.val();
+            bancoProdutosGlobal = snapshot.val() || [];
+            
+            // Puxa as categorias automaticamente para o Select
+            let categorias = new Set();
+            bancoProdutosGlobal.forEach(p => {
+                if(p && p.categoria) categorias.add(p.categoria);
+            });
+            
+            let selectHtml = '<option value="">Todas as Categorias</option>';
+            categorias.forEach(c => {
+                selectHtml += `<option value="${c}">${c}</option>`;
+            });
+            document.getElementById('categoria-vitrine').innerHTML = selectHtml;
+
+            // Renderiza a tela pela primeira vez
+            renderizarVitrine(bancoProdutosGlobal);
+        });
+
+        // 🔍 FUNÇÃO DE FILTRAGEM (BUSCA + CATEGORIA)
+        function filtrarVitrine() {
+            let textoBusca = document.getElementById('busca-vitrine').value.toLowerCase();
+            let catSelecionada = document.getElementById('categoria-vitrine').value;
+
+            let produtosFiltrados = bancoProdutosGlobal.filter(p => {
+                if(!p || !p.precoVenda) return false;
+                
+                let matchNome = p.nome.toLowerCase().includes(textoBusca);
+                let matchCategoria = catSelecionada === "" || p.categoria === catSelecionada;
+                
+                return matchNome && matchCategoria;
+            });
+
+            renderizarVitrine(produtosFiltrados);
+        }
+
+        // 🎨 FUNÇÃO DE DESENHAR OS CARDS NA TELA
+        function renderizarVitrine(produtos) {
             const container = document.getElementById('lista-vitrine');
             let html = "";
             let contadorID = 0; 
 
-            if (produtos) {
+            if (produtos && produtos.length > 0) {
                 produtos.forEach((p) => {
                     if(!p.precoVenda) return; 
 
                     let precoDisplay = "";
                     let btnClass = "";
                     let qtdMinima = p.qtdAtacado || 10;
+                    let txtCategoria = p.categoria ? `<div class="p-categoria">${p.categoria}</div>` : '';
 
                     if (isAtacado) {
                         precoDisplay = `<div class="badge-atacado">ATACADO (Mín. ${qtdMinima} un)</div>
@@ -226,6 +280,7 @@
                         <div class="card">
                             ${galeriaHtml}
                             <div class="p-info">
+                                ${txtCategoria}
                                 <div class="p-nome">${p.nome}</div>
                                 ${precoDisplay}
                             </div>
@@ -234,10 +289,15 @@
                     `;
                     contadorID++;
                 });
+            } else {
+                html = "<p style='text-align:center; grid-column: 1/-1; color: #888; padding: 40px;'>Nenhum produto encontrado na busca.</p>";
             }
-            container.innerHTML = html || "<p style='text-align:center; grid-column: 1/-1;'>Nenhum produto disponível.</p>";
-        });
+            container.innerHTML = html;
+        }
 
+        // ==========================================
+        // LÓGICA DO MODAL DE CHECKOUT
+        // ==========================================
         function buscarCEP(cep) {
             let cepLimpo = cep.replace(/\D/g, '');
             if (cepLimpo.length === 8) {
@@ -276,7 +336,6 @@
             document.getElementById('chave-pix-copia').value = MINHA_CHAVE_PIX;
             calcularTotal();
             
-            // 🎯 EVENTO PIXEL: O cliente apenas abriu a tela do produto para ver (ViewContent)
             if(typeof fbq !== 'undefined') {
                 fbq('track', 'ViewContent', { content_name: prodSelecionado.nome, value: valorUnitarioAtual, currency: 'BRL' });
             }
@@ -317,7 +376,6 @@
             enderecoFormatadoGlobal = `${rua}, ${num} - ${bairro}. ${cidade}/${uf.toUpperCase()} - CEP: ${cep}`;
             calcularTotal();
             
-            // 🎯 EVENTO PIXEL: O cliente preencheu os dados e foi para o PIX (InitiateCheckout)
             if(typeof fbq !== 'undefined') {
                 fbq('track', 'InitiateCheckout', { value: valorTotalAtual, currency: 'BRL', num_items: document.getElementById('c-qtd').value });
             }
@@ -354,7 +412,6 @@
             firebase.database().ref('pedidos_online').push(pedidoDados);
             firebase.database().ref('clientes_online').push(clienteDados);
 
-            // 🎯 EVENTO PIXEL: O cliente finalizou a compra e vai mandar o PIX! (Purchase)
             if(typeof fbq !== 'undefined') {
                 fbq('track', 'Purchase', { 
                     value: valorTotalAtual, 

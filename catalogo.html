@@ -6,10 +6,15 @@
     <title>Catálogo Rik 3D</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .filtros-container { display:flex; gap:10px; margin-bottom:15px; }
+        .filtros-container { display:flex; gap:10px; margin-bottom:15px; flex-wrap: wrap; }
+        .busca-input { flex: 2; min-width: 200px; padding: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--input); color: white; font-size: 14px; font-family: inherit; }
+        .busca-input:focus { border-color: var(--primary); outline: none; }
+        .categoria-select { flex: 1; min-width: 150px; padding: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--input); color: white; font-size: 14px; font-family: inherit; cursor: pointer; }
+
         .color-indicator { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-left: 5px; border: 1px solid #555; vertical-align: middle; }
         .vitrine-img-mini { width: 70px; height: 70px; object-fit: cover; border-radius: 4px; background: var(--input); border: 1px solid var(--border); }
         .card-flex { display: flex; gap: 15px; align-items: flex-start; }
+        .p-categoria { font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 3px; }
     </style>
 </head>
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
@@ -23,7 +28,10 @@
         <h3 style="margin-top: 0; color: var(--primary);">📦 O Seu Catálogo e Box Físico</h3>
         
         <div class="filtros-container">
-            <input type="text" id="filtro-nome" placeholder="🔍 Procurar produto pelo nome..." oninput="renderCatalogo()" style="width:100%;">
+            <input type="text" id="filtro-nome" class="busca-input" placeholder="🔍 Procurar produto pelo nome..." oninput="renderCatalogo()">
+            <select id="filtro-categoria" class="categoria-select" onchange="renderCatalogo()">
+                <option value="">Todas as Categorias</option>
+                </select>
         </div>
         
         <div id="listaProdutos"></div>
@@ -36,25 +44,48 @@
         window.onload = function() {
             carregarBanco();
             construirMenu('catalogo');
-            renderCatalogo();
+            
+            // Renderiza após um pequeno delay para garantir que o banco carregou da nuvem
+            setTimeout(renderCatalogo, 500);
         };
 
         // ==========================================
-        // RENDERIZAR A LISTA DE PRODUTOS
+        // RENDERIZAR A LISTA DE PRODUTOS E FILTROS
         // ==========================================
         function renderCatalogo() {
             try {
-                var buscaEl = document.getElementById('filtro-nome'); 
-                var busca = buscaEl ? String(buscaEl.value || "").toLowerCase() : ""; 
-                var htmlProd = "";
+                if(!db.produtos) db.produtos = [];
+
+                // 1. ATUALIZA O MENU DE CATEGORIAS
+                let categorias = new Set();
+                db.produtos.forEach(p => {
+                    if(p && p.categoria) categorias.add(p.categoria);
+                });
                 
+                let selectHtml = '<option value="">Todas as Categorias</option>';
+                let catAtual = document.getElementById('filtro-categoria').value; // Guarda o que estava selecionado
+                
+                categorias.forEach(c => {
+                    selectHtml += `<option value="${c}" ${catAtual === c ? 'selected' : ''}>${c}</option>`;
+                });
+                document.getElementById('filtro-categoria').innerHTML = selectHtml;
+
+                // 2. APLICA OS FILTROS DE BUSCA E CATEGORIA
+                var busca = document.getElementById('filtro-nome').value.toLowerCase(); 
+                var catSelecionada = document.getElementById('filtro-categoria').value;
+                
+                var htmlProd = "";
                 var produtosInvertidos = db.produtos.slice().reverse();
 
                 for (var j = 0; j < produtosInvertidos.length; j++) {
                     var p = produtosInvertidos[j]; 
                     if (!p) continue;
                     
-                    if (String(p.nome || "").toLowerCase().includes(busca)) {
+                    // Lógica do filtro
+                    var matchNome = String(p.nome || "").toLowerCase().includes(busca);
+                    var matchCategoria = catSelecionada === "" || p.categoria === catSelecionada;
+                    
+                    if (matchNome && matchCategoria) {
                         var pVenda = parseFloat(p.precoVenda) || 0; 
                         var pAtacado = p.precoAtacado !== undefined ? parseFloat(p.precoAtacado) : pVenda; 
                         var qAtacado = parseInt(p.qtdAtacado) || 10;
@@ -62,20 +93,22 @@
                         var pFeito = parseInt(p.feito) || 0; 
                         var pVendido = parseInt(p.vendido) || 0;
 
-                        // Lógica avançada do Box Físico que você criou
+                        // Lógica avançada do Box Físico (Consignação)
                         var consignadoGlobal = 0; 
                         if (db.clientes) {
                             db.clientes.forEach(function(cli) {
                                 if (cli.consignados) {
                                     cli.consignados.forEach(function(con) {
-                                        if (String(con.prodId) === String(p.id)) {
-                                            consignadoGlobal += con.qtd;
-                                        }
+                                        if (String(con.prodId) === String(p.id)) { consignadoGlobal += con.qtd; }
                                     });
                                 }
                             });
                         }
                         
+                        // Adaptação para o novo formato de consignados que migramos na outra tela
+                        var pecasConsigNovas = db.consignados ? db.consignados.filter(function(con) { return String(con.produtoId) === String(p.id) && con.qtdAtiva > 0; }) : [];
+                        for (var x = 0; x < pecasConsigNovas.length; x++) { consignadoGlobal += pecasConsigNovas[x].qtdAtiva; }
+
                         var emBox = pFeito - pVendido - consignadoGlobal;
 
                         var coresHTML = "";
@@ -92,6 +125,7 @@
                         if (coresHTML !== "") { coresHTML = `<div style="margin:5px 0;">${coresHTML}</div>`; }
 
                         var imgHTML = p.imagem ? `<img src="${p.imagem}" class="vitrine-img-mini">` : `<div class="vitrine-img-mini" style="display:flex; align-items:center; justify-content:center; font-size:10px; color:#555;">Sem Foto</div>`;
+                        var txtCategoria = p.categoria ? `<div class="p-categoria">${p.categoria}</div>` : '';
 
                         htmlProd += `
                         <div class="card-item">
@@ -99,7 +133,10 @@
                                 ${imgHTML}
                                 <div style="flex: 1;">
                                     <div style="display:flex; justify-content:space-between">
-                                        <b style="font-size:1.2em;">${p.nome || "Sem Nome"}</b>
+                                        <div>
+                                            ${txtCategoria}
+                                            <b style="font-size:1.2em;">${p.nome || "Sem Nome"}</b>
+                                        </div>
                                         <div>
                                             <button class="btn-edit" onclick="editarProduto(${p.id})">✏️</button>
                                             <button class="btn-del" onclick="apagarProduto(${p.id})">X</button>
@@ -112,7 +149,7 @@
                                     <div style="color:#858585; font-size:0.9em;">Custo de Fabricação: R$ ${pCusto.toFixed(2)}</div>
                                 </div>
                             </div>
-<div style="margin:12px 0; background:var(--bg); padding:10px; border-radius:4px; font-weight:bold; border: 1px solid var(--border);">
+                            <div style="margin:12px 0; background:var(--bg); padding:10px; border-radius:4px; font-weight:bold; border: 1px solid var(--border);">
                                 Estoque no Seu Box (Físico): <span style="color: ${emBox > 0 ? 'var(--primary)' : 'var(--danger)'}; font-size:1.2em;">${emBox} un.</span><br>
                                 Em Consignação (Lojas): <span style="color:var(--warn);">${consignadoGlobal} un.</span><br>
                                 <span style="color:#858585; font-size:0.9em; font-weight:normal;">Total Fabricado na Vida: ${pFeito}</span>
@@ -121,13 +158,13 @@
                             <div style="display:flex; gap:5px; align-items:center;">
                                 <input type="number" id="qtd-acao-${p.id}" value="1" style="width:70px; margin-bottom:0;">
                                 <button class="btn-salvar" style="padding:10px; margin:0; flex:1;" onclick="gerenciarVendaCatalogo(${p.id},'prod')">🖨️ IMPRIMIR</button>
-                                <button class="btn-salvar" style="padding:10px; background:var(--warn); color:#000; margin:0; flex:1;" onclick="gerenciarVendaCatalogo(${p.id},'vend')">💰 VENDER</button>
+                                <button class="btn-salvar" style="padding:10px; background:var(--warn); color:#000; margin:0; flex:1;" onclick="gerenciarVendaCatalogo(${p.id},'vend')">💰 VENDER RÁPIDO</button>
                             </div>
                         </div>`;
                     }
                 }
                 
-                if (htmlProd === "") htmlProd = "<p style='text-align:center; color:#858585; padding:20px;'>Nenhum produto encontrado. Vá à Calculadora para criar um.</p>";
+                if (htmlProd === "") htmlProd = "<p style='text-align:center; color:#858585; padding:40px;'>Nenhum produto encontrado com estes filtros.</p>";
                 document.getElementById('listaProdutos').innerHTML = htmlProd;
 
             } catch(e) { console.error("Erro renderCatalogo:", e); }
@@ -163,13 +200,8 @@
                     var pVend = parseInt(p.vendido) || 0;
                     
                     var consignadoGlobal = 0;
-                    db.clientes.forEach(function(cli) {
-                        if (cli.consignados) {
-                            cli.consignados.forEach(function(con) {
-                                if (String(con.prodId) === String(p.id)) { consignadoGlobal += con.qtd; }
-                            });
-                        }
-                    });
+                    var pecasConsigNovas = db.consignados ? db.consignados.filter(function(con) { return String(con.produtoId) === String(p.id) && con.qtdAtiva > 0; }) : [];
+                    for (var x = 0; x < pecasConsigNovas.length; x++) { consignadoGlobal += pecasConsigNovas[x].qtdAtiva; }
 
                     var emBox = pFeito - pVend - consignadoGlobal;
 
@@ -181,15 +213,18 @@
                     p.vendido = pVend + qtd;
                     var precoCobrado = parseFloat(p.precoVenda) || 0;
                     var tagVenda = "Varejo";
+                    
+                    // Se a quantidade vendida for maior ou igual ao mínimo de atacado, aplica o preço de atacado
                     if (p.precoAtacado !== undefined && p.qtdAtacado && qtd >= parseInt(p.qtdAtacado)) { 
                         precoCobrado = parseFloat(p.precoAtacado); 
                         tagVenda = "Atacado";
                     }
                     
                     var valorTotal = precoCobrado * qtd;
+                    if(!db.financas) db.financas = [];
                     db.financas.push({ 
                         id: Date.now(), 
-                        desc: "Venda: " + p.nome + " (" + tagVenda + ")", 
+                        desc: "Venda Balcão: " + p.nome + " (" + tagVenda + ")", 
                         valor: valorTotal, 
                         data: new Date().toLocaleDateString() 
                     });
@@ -207,7 +242,7 @@
         }
 
         function apagarProduto(id) {
-            if(!confirm("Tem a certeza absoluta que deseja apagar este produto?")) return;
+            if(!confirm("Tem a certeza absoluta que deseja apagar este produto do seu catálogo?")) return;
             db.produtos = db.produtos.filter(function(i){ return String(i.id) !== String(id); });
             salvarBanco(); 
             renderCatalogo();
