@@ -6,6 +6,26 @@
     <title>Catálogo | Rik 3D Studio</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+    
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      
+      // INICIALIZANDO OS SEUS DOIS PIXELS AO MESMO TEMPO:
+      fbq('init', '470580493048375'); 
+      fbq('init', '2913548412054326'); 
+      fbq('track', 'PageView');
+    </script>
+    <noscript>
+      <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=470580493048375&ev=PageView&noscript=1" />
+      <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2913548412054326&ev=PageView&noscript=1" />
+    </noscript>
     <style>
         :root { --primary: #007acc; --dark: #121212; --card: #1e1e1e; --warn: #f1c40f; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--dark); color: white; margin: 0; padding-bottom: 50px; }
@@ -13,7 +33,6 @@
         .vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 15px; }
         .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #333; display: flex; flex-direction: column; }
         
-        /* === CARROSSEL DE FOTOS === */
         .carousel-container { position: relative; width: 100%; height: 160px; overflow: hidden; background: #252525; }
         .carousel-images { display: flex; height: 100%; transition: transform 0.3s ease-in-out; }
         .product-img { flex: 0 0 100%; width: 100%; height: 160px; object-fit: cover; }
@@ -21,7 +40,6 @@
         .carousel-btn:hover { background: var(--primary); }
         .carousel-btn.left { left: 5px; }
         .carousel-btn.right { right: 5px; }
-        /* ========================== */
 
         .p-info { padding: 12px; flex-grow: 1; }
         .p-nome { font-weight: bold; font-size: 14px; color: #eee; height: 34px; overflow: hidden; }
@@ -33,7 +51,6 @@
         .btn-varejo { background: var(--primary); }
         .btn-atacado { background: var(--warn); color: black; }
         
-        /* Modal do Checkout */
         .modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; overflow-y: auto; }
         .modal-content { background:var(--card); padding:20px; border-radius:10px; width:90%; max-width:400px; border:1px solid #444; margin: 20px 0; max-height: 90vh; overflow-y: auto; }
         input { width:100%; padding:10px; margin:5px 0 10px 0; border-radius:5px; border:1px solid #555; background:#252525; color:white; box-sizing:border-box; font-family: inherit; }
@@ -116,8 +133,8 @@
 
     <script>
         // ⚙️ CONFIGURAÇÕES DA SUA LOJA
-        const MINHA_CHAVE_PIX = "SUA_CHAVE_PIX_AQUI"; // <-- COLOQUE SEU PIX AQUI
-        const MEU_NUMERO_WHATSAPP = "5511999999999"; // <-- COLOQUE SEU WHATSAPP AQUI
+        const MINHA_CHAVE_PIX = "sr.henrique.silva@gmail.com"; 
+        const MEU_NUMERO_WHATSAPP = "5511940139671"; 
 
         const firebaseConfig = {
             apiKey: "AIzaSyAYF8Deb-EElNATv_j-S-TEI_mrlFLpTos",
@@ -136,7 +153,6 @@
         let valorTotalAtual = 0;
         let enderecoFormatadoGlobal = "";
 
-        // === MÁGICA DO CARROSSEL DE FOTOS ===
         const carrosselIndex = {};
         function moverCarrossel(id, direcao) {
             if (carrosselIndex[id] === undefined) carrosselIndex[id] = 0;
@@ -149,7 +165,6 @@
 
             track.style.transform = `translateX(-${carrosselIndex[id] * 100}%)`;
         }
-        // ====================================
 
         if (isAtacado) {
             document.documentElement.style.setProperty('--primary', '#f1c40f');
@@ -163,7 +178,7 @@
             const produtos = snapshot.val();
             const container = document.getElementById('lista-vitrine');
             let html = "";
-            let contadorID = 0; // Para gerar IDs únicos pro carrossel
+            let contadorID = 0; 
 
             if (produtos) {
                 produtos.forEach((p) => {
@@ -182,7 +197,6 @@
                         btnClass = "btn-varejo";
                     }
 
-                    // Prepara as Fotos
                     let imgPrincipal = p.imagem || 'https://via.placeholder.com/200?text=Rik+3D';
                     let galeriaHtml = "";
 
@@ -224,7 +238,6 @@
             container.innerHTML = html || "<p style='text-align:center; grid-column: 1/-1;'>Nenhum produto disponível.</p>";
         });
 
-        // FUNÇÕES DO MODAL, CEP E COMPRA (Mantidas do seu código completo!)
         function buscarCEP(cep) {
             let cepLimpo = cep.replace(/\D/g, '');
             if (cepLimpo.length === 8) {
@@ -262,6 +275,12 @@
 
             document.getElementById('chave-pix-copia').value = MINHA_CHAVE_PIX;
             calcularTotal();
+            
+            // 🎯 EVENTO PIXEL: O cliente apenas abriu a tela do produto para ver (ViewContent)
+            if(typeof fbq !== 'undefined') {
+                fbq('track', 'ViewContent', { content_name: prodSelecionado.nome, value: valorUnitarioAtual, currency: 'BRL' });
+            }
+
             document.getElementById('step-1').className = 'step active';
             document.getElementById('step-2').className = 'step';
             document.getElementById('modalPedido').style.display = 'flex';
@@ -297,6 +316,12 @@
 
             enderecoFormatadoGlobal = `${rua}, ${num} - ${bairro}. ${cidade}/${uf.toUpperCase()} - CEP: ${cep}`;
             calcularTotal();
+            
+            // 🎯 EVENTO PIXEL: O cliente preencheu os dados e foi para o PIX (InitiateCheckout)
+            if(typeof fbq !== 'undefined') {
+                fbq('track', 'InitiateCheckout', { value: valorTotalAtual, currency: 'BRL', num_items: document.getElementById('c-qtd').value });
+            }
+
             document.getElementById('step-1').className = 'step';
             document.getElementById('step-2').className = 'step active';
         }
@@ -328,6 +353,16 @@
 
             firebase.database().ref('pedidos_online').push(pedidoDados);
             firebase.database().ref('clientes_online').push(clienteDados);
+
+            // 🎯 EVENTO PIXEL: O cliente finalizou a compra e vai mandar o PIX! (Purchase)
+            if(typeof fbq !== 'undefined') {
+                fbq('track', 'Purchase', { 
+                    value: valorTotalAtual, 
+                    currency: 'BRL', 
+                    content_name: prodSelecionado.nome,
+                    content_type: 'product'
+                });
+            }
 
             let msg = `*NOVO PEDIDO* 🛍️\n\n*Cliente:* ${clienteDados.nome}\n*Endereço:* ${clienteDados.endereco}\n*Produto:* ${prodSelecionado.nome}\n*Qtd:* ${pedidoDados.qtd} un\n*Total:* R$ ${valorTotalAtual.toFixed(2)}\n\n_Já paguei o PIX, segue comprovante:_`;
             const linkWhats = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
