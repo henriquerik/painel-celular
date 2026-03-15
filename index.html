@@ -74,6 +74,8 @@
         
         .galeria-detalhes { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; height: 300px; background: #050505; scroll-behavior: smooth; }
         .galeria-detalhes img { flex: 0 0 100%; height: 100%; object-fit: contain; scroll-snap-align: start; }
+        .galeria-detalhes::-webkit-scrollbar { height: 6px; }
+        .galeria-detalhes::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
         
         input { width:100%; padding:10px; margin:5px 0 10px 0; border-radius:5px; border:1px solid #555; background:#252525; color:white; box-sizing:border-box; font-family: inherit; }
         .step { display: none; }
@@ -103,7 +105,7 @@
     <div class="top-bar">
         <div style="color: #888;">🛒 Frete para todo o Brasil</div>
         <div id="area-usuario">
-            <span class="top-bar-link" onclick="abrirModal('modalLogin')">👤 Entrar / Cadastrar</span>
+            <span class="top-bar-link" onclick="document.getElementById('modalLogin').style.display='flex'">👤 Entrar / Cadastrar</span>
         </div>
     </div>
 
@@ -162,6 +164,7 @@
             <button onclick="fecharModal('modalDetalhes')" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 10; display:flex; align-items:center; justify-content:center;">&times;</button>
             
             <div id="detalhes-galeria" class="galeria-detalhes"></div>
+            <div style="text-align:center; padding: 5px; font-size: 10px; color: #888; background: #111;">Deslize para o lado para ver mais fotos ➔</div>
             
             <div style="padding: 20px;">
                 <div id="det-categoria" style="font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 5px;"></div>
@@ -173,7 +176,7 @@
                     <div id="det-desc" style="font-size: 14px; color: #ddd; white-space: pre-wrap; line-height: 1.5; font-family: inherit;"></div>
                 </div>
 
-                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px;" onclick="verificarLoginEAdicionar(prodJsonAtual)">➕ ADICIONAR AO CARRINHO</button>
+                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px; border-radius: 8px;" onclick="verificarLoginEAdicionar(prodJsonAtual)">➕ ADICIONAR AO CARRINHO</button>
             </div>
         </div>
     </div>
@@ -199,7 +202,9 @@
                 <h3 style="margin-top:0; color:var(--primary);">Dados de Entrega</h3>
                 
                 <label>Nome Completo / Loja:</label>
-                <input type="text" id="c-nome" placeholder="Seu nome" readonly style="background: #111; color: #888;"> <div id="campo-cnpj" style="display:none;">
+                <input type="text" id="c-nome" placeholder="Seu nome" readonly style="background: #111; color: #888;"> 
+                
+                <div id="campo-cnpj" style="display:none;">
                     <label>CNPJ:</label>
                     <input type="text" id="c-cnpj" placeholder="00.000.000/0000-00">
                 </div>
@@ -257,7 +262,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const isAtacado = urlParams.get('ref') === 'lojista' || urlParams.get('tipo') === 'atacado';
 
-        // LÓGICA DO CARRINHO E LOGIN
         let carrinho = JSON.parse(localStorage.getItem('rik3d_carrinho')) || [];
         let prodJsonAtual = ""; 
         let valorTotalCarrinho = 0;
@@ -318,7 +322,6 @@
             document.getElementById('perfil-dados').innerText = `${nome} | ${email}`;
             document.getElementById('modalPerfil').style.display = 'flex';
             
-            // Puxar Histórico do Firebase (RESGATE INTELIGENTE)
             document.getElementById('lista-historico').innerHTML = '<p style="font-size:12px; color:#888;">Buscando seus pedidos...</p>';
             
             firebase.database().ref('pedidos_online').once('value').then(snapshot => {
@@ -330,8 +333,6 @@
                     let keys = Object.keys(dados).reverse();
                     keys.forEach(k => {
                         let ped = dados[k];
-                        
-                        // Lógica Inteligente: Verifica se tem o mesmo E-mail OU o mesmo Nome exato (para compras antigas)
                         let matchEmail = ped.email && ped.email.toLowerCase() === email.toLowerCase();
                         let matchNome = ped.cliente && ped.cliente.toLowerCase() === nome.toLowerCase();
 
