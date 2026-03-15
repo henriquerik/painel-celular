@@ -27,15 +27,16 @@
       <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2913548412054326&ev=PageView&noscript=1" />
       <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=932442392855131&ev=PageView&noscript=1" />
     </noscript>
+
     <style>
         :root { --primary: #007acc; --dark: #121212; --card: #1e1e1e; --warn: #f1c40f; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--dark); color: white; margin: 0; padding-bottom: 50px; }
         header { background: var(--card); padding: 20px; text-align: center; border-bottom: 3px solid var(--primary); }
         
         .filtros-container { display: flex; gap: 10px; padding: 15px; max-width: 1200px; margin: 0 auto; flex-wrap: wrap; }
-        .busca-input { flex: 2; min-width: 200px; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; font-size: 14px; font-family: inherit; }
-        .busca-input:focus { border-color: var(--primary); outline: none; }
-        .categoria-select { flex: 1; min-width: 150px; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; font-size: 14px; font-family: inherit; cursor: pointer; }
+        .busca-input, .categoria-select { padding: 12px; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; font-size: 14px; font-family: inherit; }
+        .busca-input { flex: 2; min-width: 200px; }
+        .categoria-select { flex: 1; min-width: 150px; cursor: pointer; }
 
         .vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 0 15px 15px 15px; max-width: 1200px; margin: 0 auto; }
         .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #333; display: flex; flex-direction: column; transition: transform 0.2s; }
@@ -44,11 +45,7 @@
         .carousel-container { position: relative; width: 100%; height: 160px; overflow: hidden; background: #252525; cursor: pointer; }
         .carousel-images { display: flex; height: 100%; transition: transform 0.3s ease-in-out; }
         .product-img { flex: 0 0 100%; width: 100%; height: 160px; object-fit: cover; }
-        .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; z-index: 2; padding: 0; }
-        .carousel-btn:hover { background: var(--primary); }
-        .carousel-btn.left { left: 5px; }
-        .carousel-btn.right { right: 5px; }
-
+        
         .p-info { padding: 12px; flex-grow: 1; }
         .p-categoria { font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 3px; }
         .p-nome { font-weight: bold; font-size: 14px; color: #eee; height: 34px; overflow: hidden; }
@@ -61,10 +58,14 @@
         .btn-varejo { background: var(--primary); }
         .btn-atacado { background: var(--warn); color: black; }
         
+        /* BOTÃO CARRINHO FLUTUANTE */
+        .cart-float { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 50; transition: transform 0.2s; }
+        .cart-float:hover { transform: scale(1.1); }
+        .cart-badge { position: absolute; top: 0; right: 0; background: #e74c3c; color: white; font-size: 12px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
         .modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; overflow-y: auto; }
-        .modal-content { background:var(--card); padding:20px; border-radius:10px; width:90%; max-width:400px; border:1px solid #444; margin: 20px 0; max-height: 90vh; overflow-y: auto; }
+        .modal-content { background:var(--card); padding:20px; border-radius:10px; width:90%; max-width:400px; border:1px solid #444; margin: 20px 0; max-height: 90vh; overflow-y: auto; position: relative; }
         
-        /* ESTILOS DA GALERIA EXPANDIDA */
         .galeria-detalhes { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; height: 300px; background: #050505; scroll-behavior: smooth; }
         .galeria-detalhes img { flex: 0 0 100%; height: 100%; object-fit: contain; scroll-snap-align: start; }
         .galeria-detalhes::-webkit-scrollbar { height: 6px; }
@@ -73,6 +74,16 @@
         input { width:100%; padding:10px; margin:5px 0 10px 0; border-radius:5px; border:1px solid #555; background:#252525; color:white; box-sizing:border-box; font-family: inherit; }
         .step { display: none; }
         .step.active { display: block; }
+        
+        /* ESTILOS DO CARRINHO (LISTA) */
+        .cart-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333; }
+        .cart-item-info { flex: 1; }
+        .cart-item-title { font-size: 14px; font-weight: bold; color: white; }
+        .cart-item-price { font-size: 12px; color: var(--primary); }
+        .cart-controls { display: flex; align-items: center; gap: 10px; }
+        .btn-qty { background: #444; border: none; color: white; width: 25px; height: 25px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-remove { background: #e74c3c; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; }
+
         .pix-box { background: #252525; padding: 15px; border-radius: 8px; text-align: center; border: 1px dashed var(--primary); margin: 15px 0; }
         .total-destaque { font-size: 24px; color: #25D366; font-weight: bold; margin: 10px 0; }
         label { font-size: 12px; color: #ccc; }
@@ -94,12 +105,16 @@
 
     <div class="vitrine" id="lista-vitrine"></div>
 
+    <div class="cart-float" onclick="abrirCarrinho()" style="display:none;" id="btn-carrinho-float">
+        🛒
+        <div class="cart-badge" id="cart-count">0</div>
+    </div>
+
     <div id="modalDetalhes" class="modal">
         <div class="modal-content" style="padding: 0; max-width: 450px; overflow: hidden; position: relative;">
-            <button onclick="fecharDetalhes()" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 10; display:flex; align-items:center; justify-content:center;">&times;</button>
+            <button onclick="fecharModal('modalDetalhes')" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 10; display:flex; align-items:center; justify-content:center;">&times;</button>
             
-            <div id="detalhes-galeria" class="galeria-detalhes">
-                </div>
+            <div id="detalhes-galeria" class="galeria-detalhes"></div>
             <div style="text-align:center; padding: 5px; font-size: 10px; color: #888; background: #111;">Deslize para o lado para ver mais fotos ➔</div>
             
             <div style="padding: 20px;">
@@ -112,19 +127,32 @@
                     <div id="det-desc" style="font-size: 14px; color: #ddd; white-space: pre-wrap; line-height: 1.5; font-family: inherit;"></div>
                 </div>
 
-                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px; border-radius: 8px;" onclick="irDoDetalheProCheckout()">COMPRAR AGORA</button>
+                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px; border-radius: 8px;" onclick="adicionarAoCarrinhoPeloDetalhe()">➕ ADICIONAR AO CARRINHO</button>
             </div>
         </div>
     </div>
 
     <div id="modalPedido" class="modal">
         <div class="modal-content">
-            <div id="step-1" class="step active">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3 style="margin:0; color:var(--primary);" id="modal-titulo">Finalizar Pedido</h3>
-                    <button onclick="fecharModal()" style="background:transparent; border:none; color:#888; font-size:20px; cursor:pointer;">&times;</button>
+            <button onclick="fecharModal('modalPedido')" style="position: absolute; top: 10px; right: 10px; background: transparent; color: #888; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+            
+            <div id="step-0" class="step">
+                <h3 style="margin-top:0; color:var(--primary);">🛒 Seu Carrinho</h3>
+                <div id="lista-carrinho" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">
+                    </div>
+                <div style="text-align: right; border-top: 1px solid #444; padding-top: 10px; margin-bottom: 15px;">
+                    <span style="color:#aaa; font-size: 12px;">Total do Pedido:</span><br>
+                    <strong id="carrinho-total-display" style="font-size: 22px; color: var(--primary);">R$ 0,00</strong>
                 </div>
-                <p style="font-size:11px; color:#888; margin-bottom:15px; margin-top:5px;">Preencha seus dados para entrega e contato.</p>
+                <small id="aviso-minimo" style="color:var(--warn); display:none; font-weight:bold; margin-bottom:10px;">Lojista, a quantidade total de peças no carrinho deve ser no mínimo <span id="qtd-min-val"></span>.</small>
+                
+                <button class="btn-pedir btn-varejo" style="border-radius: 8px;" onclick="irParaCadastro()">FECHAR PEDIDO ➔</button>
+                <button class="btn-pedir" style="background:transparent; color:#888; margin-top:10px; font-size:12px;" onclick="fecharModal('modalPedido')">Continuar Comprando</button>
+            </div>
+
+            <div id="step-1" class="step">
+                <h3 style="margin-top:0; color:var(--primary);">Meus Dados</h3>
+                <p style="font-size:11px; color:#888; margin-bottom:15px; margin-top:5px;">Para onde enviamos as novidades e o seu pedido?</p>
                 
                 <label>Nome Completo / Loja:</label>
                 <input type="text" id="c-nome" placeholder="Seu nome">
@@ -133,6 +161,9 @@
                     <label>CNPJ:</label>
                     <input type="text" id="c-cnpj" placeholder="00.000.000/0000-00">
                 </div>
+
+                <label>Seu Melhor E-mail (Para receber os catálogos):</label>
+                <input type="email" id="c-email" placeholder="exemplo@email.com" style="border-color: var(--primary);">
 
                 <label>WhatsApp (com DDD):</label>
                 <input type="number" id="c-whats" placeholder="Ex: 11999999999">
@@ -153,13 +184,8 @@
                     </div>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-top:15px; align-items:center; background:#252525; padding:10px; border-radius:8px;">
-                    <div style="flex:1;"><label>Quantidade:</label><input type="number" id="c-qtd" value="1" oninput="calcularTotal()" style="margin:0;"></div>
-                    <div style="flex:1; text-align:right;"><small style="color:#aaa;">Total a Pagar:</small><br><strong id="display-total" style="font-size:20px; color:var(--primary);">R$ 0,00</strong></div>
-                </div>
-                <small id="aviso-minimo" style="color:var(--warn); display:none; font-weight:bold; margin-top:5px;">Mínimo para atacado: <span id="qtd-min-val"></span> peças</small>
-
-                <button class="btn-pedir btn-varejo" style="margin-top:20px; border-radius: 8px;" onclick="irParaPagamento()">IR PARA PAGAMENTO ➔</button>
+                <button class="btn-pedir btn-varejo" style="margin-top:20px; border-radius: 8px;" onclick="irParaPagamento()">IR PARA O PIX ➔</button>
+                <button class="btn-pedir" style="background:#444; margin-top:10px; border-radius: 8px;" onclick="mudarPasso('step-0')">⬅ Voltar ao Carrinho</button>
             </div>
 
             <div id="step-2" class="step">
@@ -173,7 +199,7 @@
                     <button onclick="copiarPix()" style="background:#333; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; width:100%; margin-top:5px; font-weight:bold;">📋 COPIAR CHAVE PIX</button>
                 </div>
                 <button class="btn-pedir" style="background:#25D366; margin-top:10px; border-radius: 8px;" onclick="finalizarPedido()">✅ JÁ PAGUEI / ENVIAR COMPROVANTE</button>
-                <button class="btn-pedir" style="background:#444; margin-top:10px; border-radius: 8px;" onclick="voltarPasso()">⬅ VOLTAR PARA EDIÇÃO</button>
+                <button class="btn-pedir" style="background:#444; margin-top:10px; border-radius: 8px;" onclick="mudarPasso('step-1')">⬅ Editar meus dados</button>
             </div>
         </div>
     </div>
@@ -194,31 +220,18 @@
         const urlParams = new URLSearchParams(window.location.search);
         const isAtacado = urlParams.get('ref') === 'lojista' || urlParams.get('tipo') === 'atacado';
 
-        let prodSelecionado = {};
-        let prodJsonAtual = ""; // Guarda o produto selecionado para passar entre as telas
-        let valorUnitarioAtual = 0;
-        let valorTotalAtual = 0;
+        // LÓGICA DO CARRINHO DE COMPRAS
+        let carrinho = [];
+        let prodJsonAtual = ""; 
+        let valorTotalCarrinho = 0;
         let enderecoFormatadoGlobal = "";
         let bancoProdutosGlobal = [];
-
-        const carrosselIndex = {};
-        function moverCarrossel(id, direcao) {
-            if (carrosselIndex[id] === undefined) carrosselIndex[id] = 0;
-            const track = document.getElementById('track-' + id);
-            const totalFotos = track.children.length;
-            
-            carrosselIndex[id] += direcao;
-            if (carrosselIndex[id] >= totalFotos) carrosselIndex[id] = 0;
-            if (carrosselIndex[id] < 0) carrosselIndex[id] = totalFotos - 1;
-
-            track.style.transform = `translateX(-${carrosselIndex[id] * 100}%)`;
-        }
+        let qtdMinimaGlobalAtacado = 10; // Padrão
 
         if (isAtacado) {
             document.documentElement.style.setProperty('--primary', '#f1c40f');
             document.getElementById('sub-header').innerText = "Área Exclusiva para Lojistas (Atacado)";
-        } else {
-            document.getElementById('sub-header').innerText = "Catálogo Oficial de Produtos";
+            document.getElementById('campo-cnpj').style.display = 'block';
         }
 
         const dbRef = firebase.database().ref('vitrine/produtos');
@@ -255,11 +268,9 @@
 
                     let precoDisplay = "";
                     let btnClass = "";
-                    let qtdMinima = p.qtdAtacado || 10;
-                    let txtCategoria = p.categoria ? `<div class="p-categoria">${p.categoria}</div>` : '';
-
+                    
                     if (isAtacado) {
-                        precoDisplay = `<div class="badge-atacado">ATACADO (Mín. ${qtdMinima} un)</div>
+                        precoDisplay = `<div class="badge-atacado">ATACADO</div>
                                         <div class="p-preco preco-atacado">R$ ${parseFloat(p.precoAtacado).toFixed(2)}</div>`;
                         btnClass = "btn-atacado";
                     } else {
@@ -268,39 +279,20 @@
                     }
 
                     let imgPrincipal = p.imagem || 'https://via.placeholder.com/200?text=Rik+3D';
-                    let galeriaHtml = "";
+                    let txtCategoria = p.categoria ? `<div class="p-categoria">${p.categoria}</div>` : '';
                     let prodJson = encodeURIComponent(JSON.stringify(p));
-
-                    if (p.imagensExtras && p.imagensExtras.length > 0) {
-                        let todasAsFotos = [imgPrincipal, ...p.imagensExtras];
-                        let imgsTags = "";
-                        todasAsFotos.forEach(foto => {
-                            // AQUI ESTÁ A MÁGICA: Ao clicar na foto, abre os detalhes!
-                            imgsTags += `<img src="${foto}" class="product-img" onclick="abrirDetalhes('${prodJson}')">`;
-                        });
-
-                        galeriaHtml = `
-                            <div class="carousel-container">
-                                <div class="carousel-images" id="track-${contadorID}">
-                                    ${imgsTags}
-                                </div>
-                                <button class="carousel-btn left" onclick="moverCarrossel(${contadorID}, -1); event.stopPropagation();">&#10094;</button>
-                                <button class="carousel-btn right" onclick="moverCarrossel(${contadorID}, 1); event.stopPropagation();">&#10095;</button>
-                            </div>
-                        `;
-                    } else {
-                        galeriaHtml = `<div class="carousel-container" onclick="abrirDetalhes('${prodJson}')"><img src="${imgPrincipal}" class="product-img"></div>`;
-                    }
 
                     html += `
                         <div class="card">
-                            ${galeriaHtml}
+                            <div class="carousel-container" onclick="abrirDetalhes('${prodJson}')">
+                                <img src="${imgPrincipal}" class="product-img">
+                            </div>
                             <div class="p-info" onclick="abrirDetalhes('${prodJson}')" style="cursor:pointer;">
                                 ${txtCategoria}
                                 <div class="p-nome">${p.nome}</div>
                                 ${precoDisplay}
                             </div>
-                            <button class="btn-pedir ${btnClass}" onclick="abrirModal('${prodJson}')">COMPRAR</button>
+                            <button class="btn-pedir ${btnClass}" onclick="adicionarAoCarrinhoDireto('${prodJson}')">🛒 ADD AO CARRINHO</button>
                         </div>
                     `;
                     contadorID++;
@@ -312,7 +304,7 @@
         }
 
         // ==========================================
-        // NOVA LÓGICA: DETALHES EXPANDIDOS (MODAL 1)
+        // FUNÇÕES DO CARRINHO E DETALHES
         // ==========================================
         function abrirDetalhes(prodJsonEncoded) {
             prodJsonAtual = prodJsonEncoded;
@@ -335,30 +327,115 @@
             let todasAsFotos = p.imagensExtras && p.imagensExtras.length > 0 ? [imgPrincipal, ...p.imagensExtras] : [imgPrincipal];
             
             let galeriaHtml = "";
-            todasAsFotos.forEach(foto => {
-                galeriaHtml += `<img src="${foto}">`;
-            });
+            todasAsFotos.forEach(foto => { galeriaHtml += `<img src="${foto}">`; });
             document.getElementById('detalhes-galeria').innerHTML = galeriaHtml;
 
-            // Dispara evento pro Face saber que ele viu a descrição
-            if(typeof fbq !== 'undefined') {
-                fbq('track', 'ViewContent', { content_name: p.nome, value: precoVal, currency: 'BRL' });
-            }
-
+            if(typeof fbq !== 'undefined') { fbq('track', 'ViewContent', { content_name: p.nome, value: precoVal, currency: 'BRL' }); }
             document.getElementById('modalDetalhes').style.display = 'flex';
         }
 
-        function fecharDetalhes() {
-            document.getElementById('modalDetalhes').style.display = 'none';
+        function fecharModal(idModal) { document.getElementById(idModal).style.display = 'none'; }
+        function mudarPasso(idPasso) {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.getElementById(idPasso).classList.add('active');
         }
 
-        function irDoDetalheProCheckout() {
-            fecharDetalhes();
-            abrirModal(prodJsonAtual);
+        function adicionarAoCarrinhoPeloDetalhe() {
+            fecharModal('modalDetalhes');
+            adicionarAoCarrinhoDireto(prodJsonAtual);
+            abrirCarrinho(); // Abre o carrinho na hora pra ele ver
+        }
+
+        function adicionarAoCarrinhoDireto(prodJsonEncoded) {
+            let p = JSON.parse(decodeURIComponent(prodJsonEncoded));
+            let preco = isAtacado && p.precoAtacado ? parseFloat(p.precoAtacado) : parseFloat(p.precoVenda);
+            
+            // Verifica se já tem no carrinho
+            let itemExistente = carrinho.find(item => item.id === p.id);
+            if (itemExistente) {
+                itemExistente.qtd += 1;
+            } else {
+                carrinho.push({ id: p.id, nome: p.nome, preco: preco, qtd: 1, qtdMin: p.qtdAtacado || 10 });
+            }
+            
+            if(typeof fbq !== 'undefined') { fbq('track', 'AddToCart', { content_name: p.nome, value: preco, currency: 'BRL' }); }
+            
+            atualizarBadgeCarrinho();
+        }
+
+        function atualizarBadgeCarrinho() {
+            let totalItens = carrinho.reduce((acc, item) => acc + item.qtd, 0);
+            document.getElementById('cart-count').innerText = totalItens;
+            document.getElementById('btn-carrinho-float').style.display = totalItens > 0 ? 'flex' : 'none';
+        }
+
+        function alterarQtdCarrinho(id, delta) {
+            let item = carrinho.find(i => i.id === id);
+            if (item) {
+                item.qtd += delta;
+                if (item.qtd <= 0) { removerDoCarrinho(id); return; }
+                renderizarListaCarrinho();
+                atualizarBadgeCarrinho();
+            }
+        }
+
+        function removerDoCarrinho(id) {
+            carrinho = carrinho.filter(i => i.id !== id);
+            renderizarListaCarrinho();
+            atualizarBadgeCarrinho();
+            if(carrinho.length === 0) fecharModal('modalPedido');
+        }
+
+        function abrirCarrinho() {
+            if (carrinho.length === 0) { alert("Seu carrinho está vazio!"); return; }
+            renderizarListaCarrinho();
+            mudarPasso('step-0');
+            document.getElementById('modalPedido').style.display = 'flex';
+        }
+
+        function renderizarListaCarrinho() {
+            let html = "";
+            valorTotalCarrinho = 0;
+            let totalPecasCarrinho = 0;
+
+            carrinho.forEach(item => {
+                let subtotal = item.preco * item.qtd;
+                valorTotalCarrinho += subtotal;
+                totalPecasCarrinho += item.qtd;
+                qtdMinimaGlobalAtacado = item.qtdMin; // Usa a última lida para referência
+
+                html += `
+                <div class="cart-item">
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.nome}</div>
+                        <div class="cart-item-price">R$ ${item.preco.toFixed(2)} un.</div>
+                    </div>
+                    <div class="cart-controls">
+                        <button class="btn-qty" onclick="alterarQtdCarrinho(${item.id}, -1)">-</button>
+                        <span style="font-weight:bold; width:20px; text-align:center;">${item.qtd}</span>
+                        <button class="btn-qty" onclick="alterarQtdCarrinho(${item.id}, 1)">+</button>
+                        <button class="btn-remove" onclick="removerDoCarrinho(${item.id})">X</button>
+                    </div>
+                </div>`;
+            });
+
+            document.getElementById('lista-carrinho').innerHTML = html;
+            document.getElementById('carrinho-total-display').innerText = `R$ ${valorTotalCarrinho.toFixed(2)}`;
+            document.getElementById('pix-valor').innerText = `R$ ${valorTotalCarrinho.toFixed(2)}`;
+
+            // Validação de atacado
+            if (isAtacado) {
+                document.getElementById('qtd-min-val').innerText = qtdMinimaGlobalAtacado;
+                if (totalPecasCarrinho < qtdMinimaGlobalAtacado) {
+                    document.getElementById('aviso-minimo').style.display = 'block';
+                } else {
+                    document.getElementById('aviso-minimo').style.display = 'none';
+                }
+            }
         }
 
         // ==========================================
-        // LÓGICA DO MODAL DE CHECKOUT (MODAL 2)
+        // LÓGICA DE CHECKOUT E PIX
         // ==========================================
         function buscarCEP(cep) {
             let cepLimpo = cep.replace(/\D/g, '');
@@ -373,47 +450,22 @@
                         document.getElementById('c-estado').value = data.uf;
                         document.getElementById('c-numero').focus();
                     }
-                }).catch(err => console.log("Erro ao buscar CEP"));
+                });
             }
         }
 
-        function abrirModal(prodJsonEncoded) {
-            prodSelecionado = JSON.parse(decodeURIComponent(prodJsonEncoded));
-            
-            if (isAtacado) {
-                document.getElementById('campo-cnpj').style.display = 'block';
-                valorUnitarioAtual = parseFloat(prodSelecionado.precoAtacado);
-                document.getElementById('c-qtd').min = prodSelecionado.qtdAtacado || 10;
-                document.getElementById('c-qtd').value = prodSelecionado.qtdAtacado || 10;
-                document.getElementById('aviso-minimo').style.display = 'block';
-                document.getElementById('qtd-min-val').innerText = prodSelecionado.qtdAtacado || 10;
-            } else {
-                document.getElementById('campo-cnpj').style.display = 'none';
-                valorUnitarioAtual = parseFloat(prodSelecionado.precoVenda);
-                document.getElementById('c-qtd').min = 1;
-                document.getElementById('c-qtd').value = 1;
-                document.getElementById('aviso-minimo').style.display = 'none';
+        function irParaCadastro() {
+            let totalPecas = carrinho.reduce((acc, item) => acc + item.qtd, 0);
+            if (isAtacado && totalPecas < qtdMinimaGlobalAtacado) {
+                alert(`Para preços de atacado, você precisa de no mínimo ${qtdMinimaGlobalAtacado} peças no carrinho (você tem ${totalPecas}).`);
+                return;
             }
-
-            document.getElementById('chave-pix-copia').value = MINHA_CHAVE_PIX;
-            calcularTotal();
-            
-            document.getElementById('step-1').className = 'step active';
-            document.getElementById('step-2').className = 'step';
-            document.getElementById('modalPedido').style.display = 'flex';
-        }
-
-        function calcularTotal() {
-            let qtd = parseInt(document.getElementById('c-qtd').value) || 1;
-            if (isAtacado && qtd < (prodSelecionado.qtdAtacado || 10)) { qtd = prodSelecionado.qtdAtacado || 10; } 
-            else if (!isAtacado && qtd < 1) { qtd = 1; }
-            valorTotalAtual = qtd * valorUnitarioAtual;
-            document.getElementById('display-total').innerText = `R$ ${valorTotalAtual.toFixed(2)}`;
-            document.getElementById('pix-valor').innerText = `R$ ${valorTotalAtual.toFixed(2)}`;
+            mudarPasso('step-1');
         }
 
         function irParaPagamento() {
             const nome = document.getElementById('c-nome').value.trim();
+            const email = document.getElementById('c-email').value.trim();
             const whats = document.getElementById('c-whats').value.trim();
             const cep = document.getElementById('c-cep').value.trim();
             const rua = document.getElementById('c-rua').value.trim();
@@ -422,33 +474,38 @@
             const cidade = document.getElementById('c-cidade').value.trim();
             const uf = document.getElementById('c-estado').value.trim();
             
-            if (!nome || !whats || !rua || !num || !cidade || !uf) {
-                alert("Por favor, preencha o seu Nome, WhatsApp e todos os dados do Endereço (Rua, Nº, Cidade, UF).");
+            if (!nome || !email || !whats || !rua || !num || !cidade || !uf) {
+                alert("Por favor, preencha todos os campos, incluindo o seu E-mail!");
                 return;
             }
+            
+            if (!email.includes("@") || !email.includes(".")) {
+                alert("Por favor, digite um e-mail válido.");
+                return;
+            }
+
             if (isAtacado && !document.getElementById('c-cnpj').value.trim()) {
                 alert("Lojista, por favor informe seu CNPJ.");
                 return;
             }
 
             enderecoFormatadoGlobal = `${rua}, ${num} - ${bairro}. ${cidade}/${uf.toUpperCase()} - CEP: ${cep}`;
-            calcularTotal();
+            document.getElementById('chave-pix-copia').value = MINHA_CHAVE_PIX;
             
             if(typeof fbq !== 'undefined') {
-                fbq('track', 'InitiateCheckout', { value: valorTotalAtual, currency: 'BRL', num_items: document.getElementById('c-qtd').value });
+                let numItens = carrinho.reduce((acc, item) => acc + item.qtd, 0);
+                fbq('track', 'InitiateCheckout', { value: valorTotalCarrinho, currency: 'BRL', num_items: numItens });
             }
 
-            document.getElementById('step-1').className = 'step';
-            document.getElementById('step-2').className = 'step active';
+            mudarPasso('step-2');
         }
 
-        function voltarPasso() { document.getElementById('step-2').className = 'step'; document.getElementById('step-1').className = 'step active'; }
-        function fecharModal() { document.getElementById('modalPedido').style.display = 'none'; }
         function copiarPix() { const input = document.getElementById('chave-pix-copia'); input.select(); document.execCommand("copy"); alert("Chave copiada!"); }
 
         function finalizarPedido() {
             const clienteDados = {
                 nome: document.getElementById('c-nome').value.trim(),
+                email: document.getElementById('c-email').value.trim(),
                 cnpj: document.getElementById('c-cnpj').value.trim(),
                 whatsapp: document.getElementById('c-whats').value.trim(),
                 endereco: enderecoFormatadoGlobal,
@@ -456,33 +513,41 @@
                 dataCadastro: new Date().toLocaleString()
             };
 
+            // Transforma o carrinho numa string bonitinha pro WhatsApp e pro Banco
+            let produtosString = "";
+            let totalItens = 0;
+            carrinho.forEach(item => {
+                produtosString += `${item.qtd}x ${item.nome}, `;
+                totalItens += item.qtd;
+            });
+            produtosString = produtosString.slice(0, -2); // Tira a última vírgula
+
             const pedidoDados = {
                 cliente: clienteDados.nome,
-                produto: prodSelecionado.nome,
-                qtd: document.getElementById('c-qtd').value,
-                valorTotal: valorTotalAtual,
+                produto: produtosString, // Agora guarda tudo junto
+                qtd: totalItens,
+                valorTotal: valorTotalCarrinho,
                 tipoVenda: clienteDados.tipo,
                 endereco: clienteDados.endereco,
                 data: new Date().toLocaleString(),
                 lido: false
             };
 
+            // Salva na Nuvem
             firebase.database().ref('pedidos_online').push(pedidoDados);
             firebase.database().ref('clientes_online').push(clienteDados);
 
             if(typeof fbq !== 'undefined') {
-                fbq('track', 'Purchase', { 
-                    value: valorTotalAtual, 
-                    currency: 'BRL', 
-                    content_name: prodSelecionado.nome,
-                    content_type: 'product'
-                });
+                fbq('track', 'Purchase', { value: valorTotalCarrinho, currency: 'BRL', content_type: 'product' });
             }
 
-            let msg = `*NOVO PEDIDO* 🛍️\n\n*Cliente:* ${clienteDados.nome}\n*Endereço:* ${clienteDados.endereco}\n*Produto:* ${prodSelecionado.nome}\n*Qtd:* ${pedidoDados.qtd} un\n*Total:* R$ ${valorTotalAtual.toFixed(2)}\n\n_Já paguei o PIX, segue comprovante:_`;
+            let msg = `*NOVO PEDIDO (CARRINHO)* 🛒\n\n*Cliente:* ${clienteDados.nome}\n*E-mail:* ${clienteDados.email}\n*Endereço:* ${clienteDados.endereco}\n\n*Itens:* ${produtosString}\n*Total:* R$ ${valorTotalCarrinho.toFixed(2)}\n\n_Já paguei o PIX, segue comprovante:_`;
             const linkWhats = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
             
-            fecharModal();
+            // Limpa o carrinho
+            carrinho = [];
+            atualizarBadgeCarrinho();
+            fecharModal('modalPedido');
             window.open(linkWhats, '_blank');
         }
     </script>
