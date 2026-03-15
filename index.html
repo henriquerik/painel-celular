@@ -31,6 +31,12 @@
     <style>
         :root { --primary: #007acc; --dark: #121212; --card: #1e1e1e; --warn: #f1c40f; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--dark); color: white; margin: 0; padding-bottom: 50px; }
+        
+        /* BARRA SUPERIOR DE LOGIN */
+        .top-bar { background: #050505; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; border-bottom: 1px solid #333; }
+        .top-bar-link { color: var(--primary); text-decoration: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .top-bar-link:hover { text-decoration: underline; }
+
         header { background: var(--card); padding: 20px; text-align: center; border-bottom: 3px solid var(--primary); }
         
         .filtros-container { display: flex; gap: 10px; padding: 15px; max-width: 1200px; margin: 0 auto; flex-wrap: wrap; }
@@ -54,7 +60,7 @@
         .preco-atacado { color: var(--warn); }
         .badge-atacado { background: var(--warn); color: black; font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin-bottom: 5px; }
         
-        .btn-pedir { color: white; border: none; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; text-transform: uppercase; }
+        .btn-pedir { color: white; border: none; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; text-transform: uppercase; border-radius: 8px;}
         .btn-varejo { background: var(--primary); }
         .btn-atacado { background: var(--warn); color: black; }
         
@@ -68,14 +74,11 @@
         
         .galeria-detalhes { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; height: 300px; background: #050505; scroll-behavior: smooth; }
         .galeria-detalhes img { flex: 0 0 100%; height: 100%; object-fit: contain; scroll-snap-align: start; }
-        .galeria-detalhes::-webkit-scrollbar { height: 6px; }
-        .galeria-detalhes::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
-
+        
         input { width:100%; padding:10px; margin:5px 0 10px 0; border-radius:5px; border:1px solid #555; background:#252525; color:white; box-sizing:border-box; font-family: inherit; }
         .step { display: none; }
         .step.active { display: block; }
         
-        /* ESTILOS DO CARRINHO (LISTA) */
         .cart-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333; }
         .cart-item-info { flex: 1; }
         .cart-item-title { font-size: 14px; font-weight: bold; color: white; }
@@ -87,9 +90,22 @@
         .pix-box { background: #252525; padding: 15px; border-radius: 8px; text-align: center; border: 1px dashed var(--primary); margin: 15px 0; }
         .total-destaque { font-size: 24px; color: #25D366; font-weight: bold; margin: 10px 0; }
         label { font-size: 12px; color: #ccc; }
+        
+        /* ESTILOS DO HISTÓRICO DE PEDIDOS */
+        .historico-item { background: #252525; border-left: 3px solid var(--primary); padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+        .hist-data { font-size: 10px; color: #aaa; }
+        .hist-prod { font-size: 13px; font-weight: bold; margin: 5px 0; }
+        .hist-valor { font-size: 14px; color: #25D366; font-weight: bold; }
     </style>
 </head>
 <body>
+
+    <div class="top-bar">
+        <div style="color: #888;">🛒 Frete para todo o Brasil</div>
+        <div id="area-usuario">
+            <span class="top-bar-link" onclick="abrirModal('modalLogin')">👤 Entrar / Cadastrar</span>
+        </div>
+    </div>
 
     <header id="header-loja">
         <h1 style="margin:0; letter-spacing: 1px;">RIK 3D STUDIO</h1>
@@ -110,12 +126,42 @@
         <div class="cart-badge" id="cart-count">0</div>
     </div>
 
+    <div id="modalLogin" class="modal">
+        <div class="modal-content" style="max-width: 350px;">
+            <button onclick="fecharModal('modalLogin')" style="position: absolute; top: 10px; right: 10px; background: transparent; color: #888; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+            <h3 style="margin-top:0; color:var(--primary); text-align:center;">👤 Identifique-se</h3>
+            <p style="font-size:12px; color:#aaa; text-align:center; margin-bottom: 20px;">Precisamos do seu e-mail para salvar o seu carrinho e o seu histórico de pedidos.</p>
+            
+            <label>Seu Nome Completo:</label>
+            <input type="text" id="login-nome" placeholder="Ex: João da Silva">
+            
+            <label>Seu Melhor E-mail:</label>
+            <input type="email" id="login-email" placeholder="exemplo@email.com">
+            
+            <button class="btn-pedir btn-varejo" style="margin-top: 15px;" onclick="efetuarLogin()">ENTRAR E CONTINUAR ➔</button>
+        </div>
+    </div>
+
+    <div id="modalPerfil" class="modal">
+        <div class="modal-content">
+            <button onclick="fecharModal('modalPerfil')" style="position: absolute; top: 10px; right: 10px; background: transparent; color: #888; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+            <h3 style="margin-top:0; color:var(--primary);">👤 Meu Perfil</h3>
+            <p style="font-size:12px; color:#aaa;" id="perfil-dados">...</p>
+            
+            <h4 style="border-bottom: 1px solid #444; padding-bottom: 5px; margin-top: 20px;">📦 Meu Histórico de Pedidos</h4>
+            <div id="lista-historico" style="max-height: 300px; overflow-y: auto;">
+                <p style="font-size:12px; color:#888;">Carregando histórico...</p>
+            </div>
+            
+            <button class="btn-pedir" style="background:#e74c3c; margin-top: 20px;" onclick="fazerLogout()">SAIR DA CONTA</button>
+        </div>
+    </div>
+
     <div id="modalDetalhes" class="modal">
         <div class="modal-content" style="padding: 0; max-width: 450px; overflow: hidden; position: relative;">
             <button onclick="fecharModal('modalDetalhes')" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 10; display:flex; align-items:center; justify-content:center;">&times;</button>
             
             <div id="detalhes-galeria" class="galeria-detalhes"></div>
-            <div style="text-align:center; padding: 5px; font-size: 10px; color: #888; background: #111;">Deslize para o lado para ver mais fotos ➔</div>
             
             <div style="padding: 20px;">
                 <div id="det-categoria" style="font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 5px;"></div>
@@ -127,7 +173,7 @@
                     <div id="det-desc" style="font-size: 14px; color: #ddd; white-space: pre-wrap; line-height: 1.5; font-family: inherit;"></div>
                 </div>
 
-                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px; border-radius: 8px;" onclick="adicionarAoCarrinhoPeloDetalhe()">➕ ADICIONAR AO CARRINHO</button>
+                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px;" onclick="verificarLoginEAdicionar(prodJsonAtual)">➕ ADICIONAR AO CARRINHO</button>
             </div>
         </div>
     </div>
@@ -138,38 +184,31 @@
             
             <div id="step-0" class="step">
                 <h3 style="margin-top:0; color:var(--primary);">🛒 Seu Carrinho</h3>
-                <div id="lista-carrinho" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">
-                    </div>
+                <div id="lista-carrinho" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;"></div>
                 <div style="text-align: right; border-top: 1px solid #444; padding-top: 10px; margin-bottom: 15px;">
                     <span style="color:#aaa; font-size: 12px;">Total do Pedido:</span><br>
                     <strong id="carrinho-total-display" style="font-size: 22px; color: var(--primary);">R$ 0,00</strong>
                 </div>
-                <small id="aviso-minimo" style="color:var(--warn); display:none; font-weight:bold; margin-bottom:10px;">Lojista, a quantidade total de peças no carrinho deve ser no mínimo <span id="qtd-min-val"></span>.</small>
+                <small id="aviso-minimo" style="color:var(--warn); display:none; font-weight:bold; margin-bottom:10px;">Lojista, a quantidade total de peças deve ser no mínimo <span id="qtd-min-val"></span>.</small>
                 
-                <button class="btn-pedir btn-varejo" style="border-radius: 8px;" onclick="irParaCadastro()">FECHAR PEDIDO ➔</button>
+                <button class="btn-pedir btn-varejo" onclick="irParaCadastro()">FECHAR PEDIDO ➔</button>
                 <button class="btn-pedir" style="background:transparent; color:#888; margin-top:10px; font-size:12px;" onclick="fecharModal('modalPedido')">Continuar Comprando</button>
             </div>
 
             <div id="step-1" class="step">
-                <h3 style="margin-top:0; color:var(--primary);">Meus Dados</h3>
-                <p style="font-size:11px; color:#888; margin-bottom:15px; margin-top:5px;">Para onde enviamos as novidades e o seu pedido?</p>
+                <h3 style="margin-top:0; color:var(--primary);">Dados de Entrega</h3>
                 
                 <label>Nome Completo / Loja:</label>
-                <input type="text" id="c-nome" placeholder="Seu nome">
-                
-                <div id="campo-cnpj" style="display:none;">
+                <input type="text" id="c-nome" placeholder="Seu nome" readonly style="background: #111; color: #888;"> <div id="campo-cnpj" style="display:none;">
                     <label>CNPJ:</label>
                     <input type="text" id="c-cnpj" placeholder="00.000.000/0000-00">
                 </div>
-
-                <label>Seu Melhor E-mail (Para receber os catálogos):</label>
-                <input type="email" id="c-email" placeholder="exemplo@email.com" style="border-color: var(--primary);">
 
                 <label>WhatsApp (com DDD):</label>
                 <input type="number" id="c-whats" placeholder="Ex: 11999999999">
 
                 <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid #333; margin-top: 5px;">
-                    <label style="color:var(--primary); font-weight:bold;">Endereço de Entrega:</label>
+                    <label style="color:var(--primary); font-weight:bold;">Endereço:</label>
                     <div style="display:flex; gap:10px; margin-top:5px;">
                         <div style="flex:1;"><label>CEP:</label><input type="text" id="c-cep" placeholder="00000-000" onblur="buscarCEP(this.value)" maxlength="9"></div>
                         <div style="flex:2;"><label>Bairro:</label><input type="text" id="c-bairro" placeholder="Bairro"></div>
@@ -184,13 +223,12 @@
                     </div>
                 </div>
 
-                <button class="btn-pedir btn-varejo" style="margin-top:20px; border-radius: 8px;" onclick="irParaPagamento()">IR PARA O PIX ➔</button>
-                <button class="btn-pedir" style="background:#444; margin-top:10px; border-radius: 8px;" onclick="mudarPasso('step-0')">⬅ Voltar ao Carrinho</button>
+                <button class="btn-pedir btn-varejo" style="margin-top:20px;" onclick="irParaPagamento()">IR PARA O PIX ➔</button>
+                <button class="btn-pedir" style="background:#444; margin-top:10px;" onclick="mudarPasso('step-0')">⬅ Voltar ao Carrinho</button>
             </div>
 
             <div id="step-2" class="step">
                 <h3 style="margin-top:0; color:#25D366;">Pagamento via PIX</h3>
-                <p style="font-size:12px; color:#aaa;">Transfira o valor exato abaixo para confirmar seu pedido.</p>
                 <div class="pix-box">
                     <div style="font-size:12px; color:#aaa;">Valor Total</div>
                     <div class="total-destaque" id="pix-valor">R$ 0,00</div>
@@ -198,8 +236,7 @@
                     <input type="text" id="chave-pix-copia" readonly style="text-align:center; font-weight:bold; font-size:16px; color:var(--primary); margin-top:5px;">
                     <button onclick="copiarPix()" style="background:#333; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; width:100%; margin-top:5px; font-weight:bold;">📋 COPIAR CHAVE PIX</button>
                 </div>
-                <button class="btn-pedir" style="background:#25D366; margin-top:10px; border-radius: 8px;" onclick="finalizarPedido()">✅ JÁ PAGUEI / ENVIAR COMPROVANTE</button>
-                <button class="btn-pedir" style="background:#444; margin-top:10px; border-radius: 8px;" onclick="mudarPasso('step-1')">⬅ Editar meus dados</button>
+                <button class="btn-pedir" style="background:#25D366; margin-top:10px;" onclick="finalizarPedido()">✅ JÁ PAGUEI / ENVIAR COMPROVANTE</button>
             </div>
         </div>
     </div>
@@ -220,19 +257,118 @@
         const urlParams = new URLSearchParams(window.location.search);
         const isAtacado = urlParams.get('ref') === 'lojista' || urlParams.get('tipo') === 'atacado';
 
-        // LÓGICA DO CARRINHO DE COMPRAS
-        let carrinho = [];
+        // LÓGICA DO CARRINHO E LOGIN
+        let carrinho = JSON.parse(localStorage.getItem('rik3d_carrinho')) || [];
         let prodJsonAtual = ""; 
         let valorTotalCarrinho = 0;
         let enderecoFormatadoGlobal = "";
         let bancoProdutosGlobal = [];
-        let qtdMinimaGlobalAtacado = 10; // Padrão
+        let qtdMinimaGlobalAtacado = 10;
+        
+        let acaoPendenteCart = null; // Guarda a ação se o cara precisar logar primeiro
 
-        if (isAtacado) {
-            document.documentElement.style.setProperty('--primary', '#f1c40f');
-            document.getElementById('sub-header').innerText = "Área Exclusiva para Lojistas (Atacado)";
-            document.getElementById('campo-cnpj').style.display = 'block';
+        // ==========================================
+        // SISTEMA DE LOGIN DO CLIENTE
+        // ==========================================
+        function verificarSessao() {
+            let email = localStorage.getItem('rik3d_user_email');
+            let nome = localStorage.getItem('rik3d_user_nome');
+            
+            if (email && nome) {
+                document.getElementById('area-usuario').innerHTML = `<span class="top-bar-link" onclick="abrirPerfilCliente()">Olá, ${nome.split(' ')[0]} ▾</span>`;
+                document.getElementById('c-nome').value = nome; // Auto-preenche no checkout
+                return true;
+            }
+            return false;
         }
+
+        function efetuarLogin() {
+            let nome = document.getElementById('login-nome').value.trim();
+            let email = document.getElementById('login-email').value.trim();
+            
+            if (!nome || !email || !email.includes('@')) {
+                alert("Por favor, preencha um Nome e um E-mail válidos.");
+                return;
+            }
+            
+            localStorage.setItem('rik3d_user_nome', nome);
+            localStorage.setItem('rik3d_user_email', email);
+            
+            verificarSessao();
+            fecharModal('modalLogin');
+            
+            // Se ele tentou comprar antes de logar, executa a compra agora
+            if (acaoPendenteCart) {
+                acaoPendenteCart();
+                acaoPendenteCart = null;
+                abrirCarrinho();
+            }
+        }
+
+        function fazerLogout() {
+            localStorage.removeItem('rik3d_user_nome');
+            localStorage.removeItem('rik3d_user_email');
+            localStorage.removeItem('rik3d_carrinho'); // Limpa carrinho ao sair
+            location.reload();
+        }
+
+        function abrirPerfilCliente() {
+            let email = localStorage.getItem('rik3d_user_email');
+            let nome = localStorage.getItem('rik3d_user_nome');
+            document.getElementById('perfil-dados').innerText = `${nome} | ${email}`;
+            document.getElementById('modalPerfil').style.display = 'flex';
+            
+            // Puxar Histórico do Firebase
+            document.getElementById('lista-historico').innerHTML = '<p style="font-size:12px; color:#888;">Buscando seus pedidos...</p>';
+            firebase.database().ref('pedidos_online').once('value').then(snapshot => {
+                let html = "";
+                let dados = snapshot.val();
+                let temPedido = false;
+                
+                if(dados) {
+                    // Como os pedidos ficam salvos de trás pra frente
+                    let keys = Object.keys(dados).reverse();
+                    keys.forEach(k => {
+                        let ped = dados[k];
+                        // Filtra pelo e-mail salvo na compra
+                        if(ped.email === email) {
+                            temPedido = true;
+                            html += `
+                            <div class="historico-item">
+                                <div class="hist-data">📅 ${ped.data}</div>
+                                <div class="hist-prod">${ped.produto}</div>
+                                <div class="hist-valor">Total: R$ ${parseFloat(ped.valorTotal).toFixed(2)}</div>
+                            </div>`;
+                        }
+                    });
+                }
+                
+                if(!temPedido) {
+                    html = '<p style="font-size:12px; color:#888;">Você ainda não fez nenhum pedido conosco.</p>';
+                }
+                document.getElementById('lista-historico').innerHTML = html;
+            });
+        }
+
+        function verificarLoginEAdicionar(prodJsonEncoded) {
+            if (!verificarSessao()) {
+                acaoPendenteCart = () => adicionarAoCarrinhoDireto(prodJsonEncoded);
+                document.getElementById('modalLogin').style.display = 'flex';
+            } else {
+                adicionarAoCarrinhoDireto(prodJsonEncoded);
+                fecharModal('modalDetalhes');
+                abrirCarrinho();
+            }
+        }
+
+        // ==========================================
+        // INICIALIZAÇÃO DA VITRINE
+        // ==========================================
+        window.onload = () => {
+            verificarSessao();
+            atualizarBadgeCarrinho();
+            if (isAtacado) { document.getElementById('campo-cnpj').style.display = 'block'; }
+        };
 
         const dbRef = firebase.database().ref('vitrine/produtos');
         dbRef.on('value', (snapshot) => {
@@ -292,7 +428,7 @@
                                 <div class="p-nome">${p.nome}</div>
                                 ${precoDisplay}
                             </div>
-                            <button class="btn-pedir ${btnClass}" onclick="adicionarAoCarrinhoDireto('${prodJson}')">🛒 ADD AO CARRINHO</button>
+                            <button class="btn-pedir ${btnClass}" onclick="verificarLoginEAdicionar('${prodJson}')">🛒 ADD AO CARRINHO</button>
                         </div>
                     `;
                     contadorID++;
@@ -304,7 +440,7 @@
         }
 
         // ==========================================
-        // FUNÇÕES DO CARRINHO E DETALHES
+        // CARRINHO E CHECKOUT
         // ==========================================
         function abrirDetalhes(prodJsonEncoded) {
             prodJsonAtual = prodJsonEncoded;
@@ -340,17 +476,10 @@
             document.getElementById(idPasso).classList.add('active');
         }
 
-        function adicionarAoCarrinhoPeloDetalhe() {
-            fecharModal('modalDetalhes');
-            adicionarAoCarrinhoDireto(prodJsonAtual);
-            abrirCarrinho(); // Abre o carrinho na hora pra ele ver
-        }
-
         function adicionarAoCarrinhoDireto(prodJsonEncoded) {
             let p = JSON.parse(decodeURIComponent(prodJsonEncoded));
             let preco = isAtacado && p.precoAtacado ? parseFloat(p.precoAtacado) : parseFloat(p.precoVenda);
             
-            // Verifica se já tem no carrinho
             let itemExistente = carrinho.find(item => item.id === p.id);
             if (itemExistente) {
                 itemExistente.qtd += 1;
@@ -358,8 +487,10 @@
                 carrinho.push({ id: p.id, nome: p.nome, preco: preco, qtd: 1, qtdMin: p.qtdAtacado || 10 });
             }
             
-            if(typeof fbq !== 'undefined') { fbq('track', 'AddToCart', { content_name: p.nome, value: preco, currency: 'BRL' }); }
+            // Salva no armazenamento local do celular do cliente
+            localStorage.setItem('rik3d_carrinho', JSON.stringify(carrinho));
             
+            if(typeof fbq !== 'undefined') { fbq('track', 'AddToCart', { content_name: p.nome, value: preco, currency: 'BRL' }); }
             atualizarBadgeCarrinho();
         }
 
@@ -374,6 +505,7 @@
             if (item) {
                 item.qtd += delta;
                 if (item.qtd <= 0) { removerDoCarrinho(id); return; }
+                localStorage.setItem('rik3d_carrinho', JSON.stringify(carrinho));
                 renderizarListaCarrinho();
                 atualizarBadgeCarrinho();
             }
@@ -381,6 +513,7 @@
 
         function removerDoCarrinho(id) {
             carrinho = carrinho.filter(i => i.id !== id);
+            localStorage.setItem('rik3d_carrinho', JSON.stringify(carrinho));
             renderizarListaCarrinho();
             atualizarBadgeCarrinho();
             if(carrinho.length === 0) fecharModal('modalPedido');
@@ -402,7 +535,7 @@
                 let subtotal = item.preco * item.qtd;
                 valorTotalCarrinho += subtotal;
                 totalPecasCarrinho += item.qtd;
-                qtdMinimaGlobalAtacado = item.qtdMin; // Usa a última lida para referência
+                qtdMinimaGlobalAtacado = item.qtdMin;
 
                 html += `
                 <div class="cart-item">
@@ -423,26 +556,16 @@
             document.getElementById('carrinho-total-display').innerText = `R$ ${valorTotalCarrinho.toFixed(2)}`;
             document.getElementById('pix-valor').innerText = `R$ ${valorTotalCarrinho.toFixed(2)}`;
 
-            // Validação de atacado
             if (isAtacado) {
                 document.getElementById('qtd-min-val').innerText = qtdMinimaGlobalAtacado;
-                if (totalPecasCarrinho < qtdMinimaGlobalAtacado) {
-                    document.getElementById('aviso-minimo').style.display = 'block';
-                } else {
-                    document.getElementById('aviso-minimo').style.display = 'none';
-                }
+                document.getElementById('aviso-minimo').style.display = totalPecasCarrinho < qtdMinimaGlobalAtacado ? 'block' : 'none';
             }
         }
 
-        // ==========================================
-        // LÓGICA DE CHECKOUT E PIX
-        // ==========================================
         function buscarCEP(cep) {
             let cepLimpo = cep.replace(/\D/g, '');
             if (cepLimpo.length === 8) {
-                fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`)
-                .then(res => res.json())
-                .then(data => {
+                fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`).then(res => res.json()).then(data => {
                     if(!data.erro) {
                         document.getElementById('c-rua').value = data.logradouro;
                         document.getElementById('c-bairro').value = data.bairro;
@@ -457,7 +580,7 @@
         function irParaCadastro() {
             let totalPecas = carrinho.reduce((acc, item) => acc + item.qtd, 0);
             if (isAtacado && totalPecas < qtdMinimaGlobalAtacado) {
-                alert(`Para preços de atacado, você precisa de no mínimo ${qtdMinimaGlobalAtacado} peças no carrinho (você tem ${totalPecas}).`);
+                alert(`Para preços de atacado, você precisa de no mínimo ${qtdMinimaGlobalAtacado} peças (você tem ${totalPecas}).`);
                 return;
             }
             mudarPasso('step-1');
@@ -465,7 +588,6 @@
 
         function irParaPagamento() {
             const nome = document.getElementById('c-nome').value.trim();
-            const email = document.getElementById('c-email').value.trim();
             const whats = document.getElementById('c-whats').value.trim();
             const cep = document.getElementById('c-cep').value.trim();
             const rua = document.getElementById('c-rua').value.trim();
@@ -474,18 +596,8 @@
             const cidade = document.getElementById('c-cidade').value.trim();
             const uf = document.getElementById('c-estado').value.trim();
             
-            if (!nome || !email || !whats || !rua || !num || !cidade || !uf) {
-                alert("Por favor, preencha todos os campos, incluindo o seu E-mail!");
-                return;
-            }
-            
-            if (!email.includes("@") || !email.includes(".")) {
-                alert("Por favor, digite um e-mail válido.");
-                return;
-            }
-
-            if (isAtacado && !document.getElementById('c-cnpj').value.trim()) {
-                alert("Lojista, por favor informe seu CNPJ.");
+            if (!whats || !rua || !num || !cidade || !uf) {
+                alert("Por favor, preencha todos os dados de entrega!");
                 return;
             }
 
@@ -504,8 +616,8 @@
 
         function finalizarPedido() {
             const clienteDados = {
-                nome: document.getElementById('c-nome').value.trim(),
-                email: document.getElementById('c-email').value.trim(),
+                nome: localStorage.getItem('rik3d_user_nome'),
+                email: localStorage.getItem('rik3d_user_email'), // Puxa do Login!
                 cnpj: document.getElementById('c-cnpj').value.trim(),
                 whatsapp: document.getElementById('c-whats').value.trim(),
                 endereco: enderecoFormatadoGlobal,
@@ -513,18 +625,18 @@
                 dataCadastro: new Date().toLocaleString()
             };
 
-            // Transforma o carrinho numa string bonitinha pro WhatsApp e pro Banco
             let produtosString = "";
             let totalItens = 0;
             carrinho.forEach(item => {
                 produtosString += `${item.qtd}x ${item.nome}, `;
                 totalItens += item.qtd;
             });
-            produtosString = produtosString.slice(0, -2); // Tira a última vírgula
+            produtosString = produtosString.slice(0, -2);
 
             const pedidoDados = {
                 cliente: clienteDados.nome,
-                produto: produtosString, // Agora guarda tudo junto
+                email: clienteDados.email, // ADICIONADO PARA O HISTÓRICO FUNCIONAR
+                produto: produtosString,
                 qtd: totalItens,
                 valorTotal: valorTotalCarrinho,
                 tipoVenda: clienteDados.tipo,
@@ -533,19 +645,16 @@
                 lido: false
             };
 
-            // Salva na Nuvem
             firebase.database().ref('pedidos_online').push(pedidoDados);
             firebase.database().ref('clientes_online').push(clienteDados);
 
-            if(typeof fbq !== 'undefined') {
-                fbq('track', 'Purchase', { value: valorTotalCarrinho, currency: 'BRL', content_type: 'product' });
-            }
+            if(typeof fbq !== 'undefined') { fbq('track', 'Purchase', { value: valorTotalCarrinho, currency: 'BRL', content_type: 'product' }); }
 
             let msg = `*NOVO PEDIDO (CARRINHO)* 🛒\n\n*Cliente:* ${clienteDados.nome}\n*E-mail:* ${clienteDados.email}\n*Endereço:* ${clienteDados.endereco}\n\n*Itens:* ${produtosString}\n*Total:* R$ ${valorTotalCarrinho.toFixed(2)}\n\n_Já paguei o PIX, segue comprovante:_`;
             const linkWhats = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
             
-            // Limpa o carrinho
             carrinho = [];
+            localStorage.removeItem('rik3d_carrinho');
             atualizarBadgeCarrinho();
             fecharModal('modalPedido');
             window.open(linkWhats, '_blank');

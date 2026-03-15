@@ -8,8 +8,10 @@
         .consignado-header { background: var(--input); padding: 15px; border-radius: 4px; border-left: 4px solid var(--primary); margin-bottom: 15px; }
         .consignado-header h2 { margin: 0 0 5px 0; font-size: 18px; color: var(--primary); text-transform: uppercase; }
         .vitrine-img-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
-        .btn-sync { background: #2ecc71; color: #000; font-weight: bold; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: center;}
+        .btn-sync { background: #2ecc71; color: #000; font-weight: bold; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1;}
         .btn-sync:hover { background: #27ae60; }
+        .btn-export { background: #3498db; color: #fff; font-weight: bold; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1;}
+        .btn-export:hover { background: #2980b9; }
         .badge-tipo { font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 10px;}
         .badge-varejo { background: var(--primary); color: white; }
         .badge-atacado { background: var(--warn); color: black; }
@@ -23,10 +25,15 @@
         
         <div id="view-lista-clientes">
             
-            <button class="btn-sync" onclick="escutarClientesOnline()">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
-                SINCRONIZAR CLIENTES DA LOJA ONLINE
-            </button>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                <button class="btn-sync" onclick="escutarClientesOnline()">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+                    SINCRONIZAR VITRINE
+                </button>
+                <button class="btn-export" onclick="exportarEmailsCSV()">
+                    📧 EXPORTAR E-MAILS (MARKETING)
+                </button>
+            </div>
 
             <div id="container-clientes-online"></div>
 
@@ -60,6 +67,11 @@
                 </div>
 
                 <div style="margin-top: 10px;">
+                    <label>E-mail do Cliente:</label>
+                    <input type="email" id="cli-email" placeholder="exemplo@email.com" style="width: 100%; padding: 10px; border-radius: 4px; background: #252525; color: white; border: 1px solid #555;">
+                </div>
+
+                <div style="margin-top: 10px;">
                     <label>Endereço Completo:</label>
                     <input type="text" id="cli-endereco" placeholder="Rua, número, bairro, cidade..." style="width: 100%; padding: 10px; border-radius: 4px; background: #252525; color: white; border: 1px solid #555;">
                 </div>
@@ -85,7 +97,7 @@
             
             <div class="consignado-header" id="perfil-header">
                 <h2 id="perfil-nome-loja">Nome da Loja</h2>
-                <div style="font-size:12px; color:#ccc;" id="perfil-info">Dono: ... | Tel: ...</div>
+                <div style="font-size:12px; color:#ccc;" id="perfil-info">Dono: ... | Tel: ... | E-mail: ...</div>
                 <div style="font-size:12px; color:#aaa; margin-top: 5px;" id="perfil-notas">...</div>
             </div>
             
@@ -127,7 +139,7 @@
             carregarBanco();
             construirMenu('clientes');
             if(!db.consignados) db.consignados = [];
-            ajustarCampos(); // Deixa o formulário no formato certo logo que abre
+            ajustarCampos();
             renderClientes();
         };
 
@@ -149,7 +161,7 @@
                 document.getElementById('lbl-nome').innerText = "Nome Completo do Cliente:";
                 document.getElementById('cli-loja').placeholder = "Ex: João Silva";
                 document.getElementById('div-responsavel').style.display = "none";
-                document.getElementById('cli-dono').value = ""; // Limpa se esconder
+                document.getElementById('cli-dono').value = ""; 
                 document.getElementById('lbl-notas').innerText = "Anotações / Preferências (Ex: Gosta de azul):";
             }
         }
@@ -188,12 +200,15 @@
                 const badgeTxt = isAtacado ? 'LOJISTA / ATACADO' : 'VAREJO';
                 const cJson = encodeURIComponent(JSON.stringify(c));
                 
+                let showEmail = c.email ? ` | E-mail: ${c.email}` : '';
+                
                 html += `
                 <div class="card-item" style="border-left-color: ${tipoCor}; margin:0;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div>
                             <b style="font-size:1.1em; color:var(--text);">${c.nome}</b> <span style="font-size:10px; background:${tipoCor}; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">${badgeTxt}</span><br>
-                            <small style="color:#858585;">WhatsApp: ${c.whatsapp} | Endereço: ${c.endereco}</small>
+                            <small style="color:#858585;">WhatsApp: ${c.whatsapp}${showEmail}</small><br>
+                            <small style="color:#858585;">Endereço: ${c.endereco}</small>
                             ${c.cnpj ? `<br><small style="color:#aaa;">CNPJ: ${c.cnpj}</small>` : ''}
                         </div>
                         <div style="display:flex; gap:5px;">
@@ -222,8 +237,9 @@
                 id: Date.now(),
                 tipo: c.tipo || 'Varejo',
                 loja: c.nome, 
-                dono: c.nome, // Se for varejo, o dono é a própria pessoa
+                dono: c.nome, 
                 telefone: c.whatsapp,
+                email: c.email || '', // PUXA O EMAIL DA NUVEM AQUI!
                 endereco: c.endereco,
                 notas: `Cadastrado via Vitrine Online. CNPJ: ${c.cnpj || 'Não informado'}. Data: ${c.dataCadastro || new Date().toLocaleDateString()}`
             });
@@ -247,8 +263,44 @@
         }
 
         // ==========================================
-        // GESTÃO DE CLIENTES LOCAIS (CRM + CONSIGNAÇÃO)
+        // GESTÃO DE CLIENTES LOCAIS E EXPORTAÇÃO
         // ==========================================
+        function exportarEmailsCSV() {
+            if (!db.clientes || db.clientes.length === 0) {
+                alert("Você não possui clientes cadastrados.");
+                return;
+            }
+
+            let csvContent = "Nome,Email,Tipo\n";
+            let count = 0;
+
+            db.clientes.forEach(c => {
+                if (c.email && c.email.includes("@")) {
+                    // Evita vírgulas quebrando o CSV
+                    let nomeLimpo = c.loja.replace(/,/g, ''); 
+                    csvContent += `${nomeLimpo},${c.email},${c.tipo || 'Varejo'}\n`;
+                    count++;
+                }
+            });
+
+            if (count === 0) {
+                alert("Nenhum dos seus clientes salvos possui um e-mail válido cadastrado.");
+                return;
+            }
+
+            // Gera o arquivo para baixar
+            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            let url = URL.createObjectURL(blob);
+            let linkA = document.createElement("a");
+            linkA.setAttribute("href", url);
+            linkA.setAttribute("download", "lista_emails_rik3d.csv");
+            document.body.appendChild(linkA);
+            linkA.click();
+            document.body.removeChild(linkA);
+            
+            mostrarToast(`${count} e-mails exportados com sucesso!`);
+        }
+
         function renderClientes() {
             try {
                 if(!db.clientes) db.clientes = [];
@@ -260,7 +312,7 @@
                 
                 for (var i = 0; i < clientesOrdenados.length; i++) {
                     var c = clientesOrdenados[i];
-                    if (String(c.loja).toLowerCase().includes(busca) || String(c.dono || "").toLowerCase().includes(busca)) {
+                    if (String(c.loja).toLowerCase().includes(busca) || String(c.dono || "").toLowerCase().includes(busca) || String(c.email || "").toLowerCase().includes(busca)) {
                         
                         var pecasLojas = db.consignados.filter(function(con) { 
                             return String(con.clienteId) === String(c.id) && con.qtdAtiva > 0; 
@@ -269,7 +321,6 @@
                         var totalPecas = 0;
                         for (var j = 0; j < pecasLojas.length; j++) { totalPecas += pecasLojas[j].qtdAtiva; }
                         
-                        // Verifica o tipo para pintar o Card
                         let tipoCad = c.tipo || ( ((c.notas || "").toLowerCase().includes("atacado") || totalPecas > 0) ? 'Atacado' : 'Varejo' );
                         let classBadge = tipoCad === 'Atacado' ? 'badge-atacado' : 'badge-varejo';
                         let textoBadge = tipoCad === 'Atacado' ? 'LOJISTA / ATACADO' : 'CLIENTE VAREJO';
@@ -277,6 +328,7 @@
                         
                         let txtResponsavel = (tipoCad === 'Atacado' && c.dono) ? `👤 Resp: ${c.dono} | ` : '';
                         let txtPecas = tipoCad === 'Atacado' ? `📦 ${totalPecas} peças ativas na loja` : `🛍️ Compra para uso próprio`;
+                        let txtEmail = c.email ? ` | 📧 ${c.email}` : '';
 
                         html += `
                         <div class="card-item" style="border-left-color: ${corBorda}; cursor:pointer; margin-bottom:10px;" onclick="abrirPerfil(${c.id})">
@@ -284,7 +336,7 @@
                                 <div>
                                     <b style="font-size:1.2em; color:var(--text);">${c.loja}</b>
                                     <span class="badge-tipo ${classBadge}">${textoBadge}</span><br>
-                                    <small style="color:#858585;">${txtResponsavel}${txtPecas}</small>
+                                    <small style="color:#858585;">${txtResponsavel}${txtPecas}${txtEmail}</small>
                                 </div>
                                 <button class="btn-del" onclick="apagarCliente(event, ${c.id})" title="Apagar Cadastro">X</button>
                             </div>
@@ -301,13 +353,13 @@
             var loja = document.getElementById('cli-loja').value.trim();
             var dono = document.getElementById('cli-dono').value.trim();
             var telefone = document.getElementById('cli-telefone').value.trim();
+            var email = document.getElementById('cli-email').value.trim(); // PEGA O EMAIL DA CAIXINHA
             var endereco = document.getElementById('cli-endereco').value.trim();
             var notas = document.getElementById('cli-notas').value.trim();
             var idEdit = document.getElementById('cli-id').value;
 
             if (!loja) { alert("O Nome do Cliente/Loja é obrigatório."); return; }
             
-            // Se for varejo e não preencheu dono, o dono é ele mesmo
             if (tipo === 'Varejo' && !dono) dono = loja;
 
             if (idEdit) {
@@ -317,6 +369,7 @@
                     db.clientes[idx].loja = loja; 
                     db.clientes[idx].dono = dono; 
                     db.clientes[idx].telefone = telefone; 
+                    db.clientes[idx].email = email;
                     db.clientes[idx].endereco = endereco; 
                     db.clientes[idx].notas = notas; 
                 }
@@ -327,6 +380,7 @@
                     loja: loja, 
                     dono: dono, 
                     telefone: telefone, 
+                    email: email,
                     endereco: endereco, 
                     notas: notas 
                 });
@@ -344,6 +398,7 @@
             document.getElementById('cli-loja').value = '';
             document.getElementById('cli-dono').value = '';
             document.getElementById('cli-telefone').value = '';
+            document.getElementById('cli-email').value = '';
             document.getElementById('cli-endereco').value = '';
             document.getElementById('cli-notas').value = '';
             document.getElementById('btn-salvar-cli').innerText = 'SALVAR CADASTRO';
@@ -373,16 +428,14 @@
             
             let tipoCad = c.tipo || ( ((c.notas || "").toLowerCase().includes("atacado")) ? 'Atacado' : 'Varejo' );
 
-            // Ajusta o visual do perfil dependendo de quem é
             let infoDono = (tipoCad === 'Atacado' && c.dono !== c.loja) ? `Resp: ${c.dono} | ` : '';
             
             document.getElementById('perfil-header').style.borderLeftColor = tipoCad === 'Atacado' ? 'var(--warn)' : 'var(--primary)';
             document.getElementById('perfil-nome-loja').innerText = c.loja;
             document.getElementById('perfil-nome-loja').style.color = tipoCad === 'Atacado' ? 'var(--warn)' : 'var(--primary)';
-            document.getElementById('perfil-info').innerText = `${infoDono}WhatsApp: ${c.telefone || 'Não informado'}`;
+            document.getElementById('perfil-info').innerText = `${infoDono}WhatsApp: ${c.telefone || 'S/N'} | E-mail: ${c.email || 'Não informado'}`;
             document.getElementById('perfil-notas').innerText = `Anotações: ${c.notas || 'Nenhuma.'}`;
             
-            // Se for Varejo, podemos esconder a parte de enviar consignação para simplificar a vida
             if (tipoCad === 'Varejo') {
                 document.getElementById('box-consignacao').style.display = 'none';
                 document.getElementById('titulo-consignados').innerText = "📦 HISTÓRICO DE PEÇAS DESTE CLIENTE";
