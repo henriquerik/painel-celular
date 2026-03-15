@@ -265,10 +265,10 @@
         let bancoProdutosGlobal = [];
         let qtdMinimaGlobalAtacado = 10;
         
-        let acaoPendenteCart = null; // Guarda a ação se o cara precisar logar primeiro
+        let acaoPendenteCart = null; 
 
         // ==========================================
-        // SISTEMA DE LOGIN DO CLIENTE
+        // SISTEMA DE LOGIN E HISTÓRICO INTELIGENTE
         // ==========================================
         function verificarSessao() {
             let email = localStorage.getItem('rik3d_user_email');
@@ -276,7 +276,7 @@
             
             if (email && nome) {
                 document.getElementById('area-usuario').innerHTML = `<span class="top-bar-link" onclick="abrirPerfilCliente()">Olá, ${nome.split(' ')[0]} ▾</span>`;
-                document.getElementById('c-nome').value = nome; // Auto-preenche no checkout
+                document.getElementById('c-nome').value = nome; 
                 return true;
             }
             return false;
@@ -297,7 +297,6 @@
             verificarSessao();
             fecharModal('modalLogin');
             
-            // Se ele tentou comprar antes de logar, executa a compra agora
             if (acaoPendenteCart) {
                 acaoPendenteCart();
                 acaoPendenteCart = null;
@@ -308,34 +307,42 @@
         function fazerLogout() {
             localStorage.removeItem('rik3d_user_nome');
             localStorage.removeItem('rik3d_user_email');
-            localStorage.removeItem('rik3d_carrinho'); // Limpa carrinho ao sair
+            localStorage.removeItem('rik3d_carrinho');
             location.reload();
         }
 
         function abrirPerfilCliente() {
-            let email = localStorage.getItem('rik3d_user_email');
-            let nome = localStorage.getItem('rik3d_user_nome');
+            let email = localStorage.getItem('rik3d_user_email') || "";
+            let nome = localStorage.getItem('rik3d_user_nome') || "";
+            
             document.getElementById('perfil-dados').innerText = `${nome} | ${email}`;
             document.getElementById('modalPerfil').style.display = 'flex';
             
-            // Puxar Histórico do Firebase
+            // Puxar Histórico do Firebase (RESGATE INTELIGENTE)
             document.getElementById('lista-historico').innerHTML = '<p style="font-size:12px; color:#888;">Buscando seus pedidos...</p>';
+            
             firebase.database().ref('pedidos_online').once('value').then(snapshot => {
                 let html = "";
                 let dados = snapshot.val();
                 let temPedido = false;
                 
                 if(dados) {
-                    // Como os pedidos ficam salvos de trás pra frente
                     let keys = Object.keys(dados).reverse();
                     keys.forEach(k => {
                         let ped = dados[k];
-                        // Filtra pelo e-mail salvo na compra
-                        if(ped.email === email) {
+                        
+                        // Lógica Inteligente: Verifica se tem o mesmo E-mail OU o mesmo Nome exato (para compras antigas)
+                        let matchEmail = ped.email && ped.email.toLowerCase() === email.toLowerCase();
+                        let matchNome = ped.cliente && ped.cliente.toLowerCase() === nome.toLowerCase();
+
+                        if(matchEmail || matchNome) {
                             temPedido = true;
                             html += `
                             <div class="historico-item">
-                                <div class="hist-data">📅 ${ped.data}</div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div class="hist-data">📅 ${ped.data}</div>
+                                    <div style="font-size:10px; background:#444; padding:2px 6px; border-radius:4px; color: #fff;">${ped.tipoVenda || 'Varejo'}</div>
+                                </div>
                                 <div class="hist-prod">${ped.produto}</div>
                                 <div class="hist-valor">Total: R$ ${parseFloat(ped.valorTotal).toFixed(2)}</div>
                             </div>`;
@@ -344,9 +351,11 @@
                 }
                 
                 if(!temPedido) {
-                    html = '<p style="font-size:12px; color:#888;">Você ainda não fez nenhum pedido conosco.</p>';
+                    html = '<p style="font-size:12px; color:#888;">Você ainda não tem histórico de compras nesta conta.</p>';
                 }
                 document.getElementById('lista-historico').innerHTML = html;
+            }).catch(err => {
+                document.getElementById('lista-historico').innerHTML = '<p style="color:var(--warn);">Erro ao carregar histórico.</p>';
             });
         }
 
@@ -487,7 +496,6 @@
                 carrinho.push({ id: p.id, nome: p.nome, preco: preco, qtd: 1, qtdMin: p.qtdAtacado || 10 });
             }
             
-            // Salva no armazenamento local do celular do cliente
             localStorage.setItem('rik3d_carrinho', JSON.stringify(carrinho));
             
             if(typeof fbq !== 'undefined') { fbq('track', 'AddToCart', { content_name: p.nome, value: preco, currency: 'BRL' }); }
@@ -617,7 +625,7 @@
         function finalizarPedido() {
             const clienteDados = {
                 nome: localStorage.getItem('rik3d_user_nome'),
-                email: localStorage.getItem('rik3d_user_email'), // Puxa do Login!
+                email: localStorage.getItem('rik3d_user_email'), 
                 cnpj: document.getElementById('c-cnpj').value.trim(),
                 whatsapp: document.getElementById('c-whats').value.trim(),
                 endereco: enderecoFormatadoGlobal,
@@ -635,7 +643,7 @@
 
             const pedidoDados = {
                 cliente: clienteDados.nome,
-                email: clienteDados.email, // ADICIONADO PARA O HISTÓRICO FUNCIONAR
+                email: clienteDados.email,
                 produto: produtosString,
                 qtd: totalItens,
                 valorTotal: valorTotalCarrinho,
