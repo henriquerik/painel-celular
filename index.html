@@ -17,10 +17,9 @@
       s.parentNode.insertBefore(t,s)}(window, document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
       
-      // INICIALIZANDO OS SEUS TRÊS PIXELS AO MESMO TEMPO:
       fbq('init', '470580493048375'); 
       fbq('init', '2913548412054326'); 
-      fbq('init', '932442392855131'); // <-- O SEU NOVO PIXEL AQUI!
+      fbq('init', '932442392855131'); 
       fbq('track', 'PageView');
     </script>
     <noscript>
@@ -33,16 +32,16 @@
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--dark); color: white; margin: 0; padding-bottom: 50px; }
         header { background: var(--card); padding: 20px; text-align: center; border-bottom: 3px solid var(--primary); }
         
-        /* ESTILOS DA BARRA DE BUSCA */
         .filtros-container { display: flex; gap: 10px; padding: 15px; max-width: 1200px; margin: 0 auto; flex-wrap: wrap; }
         .busca-input { flex: 2; min-width: 200px; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; font-size: 14px; font-family: inherit; }
         .busca-input:focus { border-color: var(--primary); outline: none; }
         .categoria-select { flex: 1; min-width: 150px; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; font-size: 14px; font-family: inherit; cursor: pointer; }
 
         .vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 0 15px 15px 15px; max-width: 1200px; margin: 0 auto; }
-        .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #333; display: flex; flex-direction: column; }
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #333; display: flex; flex-direction: column; transition: transform 0.2s; }
+        .card:hover { border-color: var(--primary); }
         
-        .carousel-container { position: relative; width: 100%; height: 160px; overflow: hidden; background: #252525; }
+        .carousel-container { position: relative; width: 100%; height: 160px; overflow: hidden; background: #252525; cursor: pointer; }
         .carousel-images { display: flex; height: 100%; transition: transform 0.3s ease-in-out; }
         .product-img { flex: 0 0 100%; width: 100%; height: 160px; object-fit: cover; }
         .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; z-index: 2; padding: 0; }
@@ -57,12 +56,20 @@
         .preco-varejo { color: var(--primary); }
         .preco-atacado { color: var(--warn); }
         .badge-atacado { background: var(--warn); color: black; font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin-bottom: 5px; }
-        .btn-pedir { color: white; border: none; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; }
+        
+        .btn-pedir { color: white; border: none; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; text-transform: uppercase; }
         .btn-varejo { background: var(--primary); }
         .btn-atacado { background: var(--warn); color: black; }
         
         .modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; overflow-y: auto; }
         .modal-content { background:var(--card); padding:20px; border-radius:10px; width:90%; max-width:400px; border:1px solid #444; margin: 20px 0; max-height: 90vh; overflow-y: auto; }
+        
+        /* ESTILOS DA GALERIA EXPANDIDA */
+        .galeria-detalhes { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; height: 300px; background: #050505; scroll-behavior: smooth; }
+        .galeria-detalhes img { flex: 0 0 100%; height: 100%; object-fit: contain; scroll-snap-align: start; }
+        .galeria-detalhes::-webkit-scrollbar { height: 6px; }
+        .galeria-detalhes::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
+
         input { width:100%; padding:10px; margin:5px 0 10px 0; border-radius:5px; border:1px solid #555; background:#252525; color:white; box-sizing:border-box; font-family: inherit; }
         .step { display: none; }
         .step.active { display: block; }
@@ -82,10 +89,33 @@
         <input type="text" id="busca-vitrine" class="busca-input" placeholder="🔍 Buscar por nome do produto..." oninput="filtrarVitrine()">
         <select id="categoria-vitrine" class="categoria-select" onchange="filtrarVitrine()">
             <option value="">Todas as Categorias</option>
-            </select>
+        </select>
     </div>
 
     <div class="vitrine" id="lista-vitrine"></div>
+
+    <div id="modalDetalhes" class="modal">
+        <div class="modal-content" style="padding: 0; max-width: 450px; overflow: hidden; position: relative;">
+            <button onclick="fecharDetalhes()" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 10; display:flex; align-items:center; justify-content:center;">&times;</button>
+            
+            <div id="detalhes-galeria" class="galeria-detalhes">
+                </div>
+            <div style="text-align:center; padding: 5px; font-size: 10px; color: #888; background: #111;">Deslize para o lado para ver mais fotos ➔</div>
+            
+            <div style="padding: 20px;">
+                <div id="det-categoria" style="font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 5px;"></div>
+                <h2 id="det-nome" style="margin-top: 0; color: white; font-size: 20px; margin-bottom: 5px;">Nome</h2>
+                <div id="det-preco" style="font-size: 24px; font-weight: bold; color: var(--primary);">R$ 0,00</div>
+                
+                <div style="margin-top: 15px; background: #252525; padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                    <h4 style="margin-top:0; color:#aaa; font-size:12px; border-bottom:1px solid #444; padding-bottom:5px;">DESCRIÇÃO DO PRODUTO</h4>
+                    <div id="det-desc" style="font-size: 14px; color: #ddd; white-space: pre-wrap; line-height: 1.5; font-family: inherit;"></div>
+                </div>
+
+                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px; border-radius: 8px;" onclick="irDoDetalheProCheckout()">COMPRAR AGORA</button>
+            </div>
+        </div>
+    </div>
 
     <div id="modalPedido" class="modal">
         <div class="modal-content">
@@ -129,7 +159,7 @@
                 </div>
                 <small id="aviso-minimo" style="color:var(--warn); display:none; font-weight:bold; margin-top:5px;">Mínimo para atacado: <span id="qtd-min-val"></span> peças</small>
 
-                <button class="btn-pedir btn-varejo" style="margin-top:20px;" onclick="irParaPagamento()">IR PARA PAGAMENTO ➔</button>
+                <button class="btn-pedir btn-varejo" style="margin-top:20px; border-radius: 8px;" onclick="irParaPagamento()">IR PARA PAGAMENTO ➔</button>
             </div>
 
             <div id="step-2" class="step">
@@ -142,14 +172,13 @@
                     <input type="text" id="chave-pix-copia" readonly style="text-align:center; font-weight:bold; font-size:16px; color:var(--primary); margin-top:5px;">
                     <button onclick="copiarPix()" style="background:#333; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; width:100%; margin-top:5px; font-weight:bold;">📋 COPIAR CHAVE PIX</button>
                 </div>
-                <button class="btn-pedir" style="background:#25D366; margin-top:10px;" onclick="finalizarPedido()">✅ JÁ PAGUEI / ENVIAR COMPROVANTE</button>
-                <button class="btn-pedir" style="background:#444; margin-top:10px;" onclick="voltarPasso()">⬅ VOLTAR PARA EDIÇÃO</button>
+                <button class="btn-pedir" style="background:#25D366; margin-top:10px; border-radius: 8px;" onclick="finalizarPedido()">✅ JÁ PAGUEI / ENVIAR COMPROVANTE</button>
+                <button class="btn-pedir" style="background:#444; margin-top:10px; border-radius: 8px;" onclick="voltarPasso()">⬅ VOLTAR PARA EDIÇÃO</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ⚙️ CONFIGURAÇÕES DA SUA LOJA
         const MINHA_CHAVE_PIX = "sr.henrique.silva@gmail.com"; 
         const MEU_NUMERO_WHATSAPP = "5511940139671"; 
 
@@ -166,10 +195,11 @@
         const isAtacado = urlParams.get('ref') === 'lojista' || urlParams.get('tipo') === 'atacado';
 
         let prodSelecionado = {};
+        let prodJsonAtual = ""; // Guarda o produto selecionado para passar entre as telas
         let valorUnitarioAtual = 0;
         let valorTotalAtual = 0;
         let enderecoFormatadoGlobal = "";
-        let bancoProdutosGlobal = []; // Guarda todos os produtos para o filtro funcionar
+        let bancoProdutosGlobal = [];
 
         const carrosselIndex = {};
         function moverCarrossel(id, direcao) {
@@ -192,45 +222,28 @@
         }
 
         const dbRef = firebase.database().ref('vitrine/produtos');
-        
-        // 🔄 OUVINTE DO FIREBASE
         dbRef.on('value', (snapshot) => {
             bancoProdutosGlobal = snapshot.val() || [];
-            
-            // Puxa as categorias automaticamente para o Select
             let categorias = new Set();
-            bancoProdutosGlobal.forEach(p => {
-                if(p && p.categoria) categorias.add(p.categoria);
-            });
-            
+            bancoProdutosGlobal.forEach(p => { if(p && p.categoria) categorias.add(p.categoria); });
             let selectHtml = '<option value="">Todas as Categorias</option>';
-            categorias.forEach(c => {
-                selectHtml += `<option value="${c}">${c}</option>`;
-            });
+            categorias.forEach(c => { selectHtml += `<option value="${c}">${c}</option>`; });
             document.getElementById('categoria-vitrine').innerHTML = selectHtml;
-
-            // Renderiza a tela pela primeira vez
             renderizarVitrine(bancoProdutosGlobal);
         });
 
-        // 🔍 FUNÇÃO DE FILTRAGEM (BUSCA + CATEGORIA)
         function filtrarVitrine() {
             let textoBusca = document.getElementById('busca-vitrine').value.toLowerCase();
             let catSelecionada = document.getElementById('categoria-vitrine').value;
-
             let produtosFiltrados = bancoProdutosGlobal.filter(p => {
                 if(!p || !p.precoVenda) return false;
-                
                 let matchNome = p.nome.toLowerCase().includes(textoBusca);
                 let matchCategoria = catSelecionada === "" || p.categoria === catSelecionada;
-                
                 return matchNome && matchCategoria;
             });
-
             renderizarVitrine(produtosFiltrados);
         }
 
-        // 🎨 FUNÇÃO DE DESENHAR OS CARDS NA TELA
         function renderizarVitrine(produtos) {
             const container = document.getElementById('lista-vitrine');
             let html = "";
@@ -256,12 +269,14 @@
 
                     let imgPrincipal = p.imagem || 'https://via.placeholder.com/200?text=Rik+3D';
                     let galeriaHtml = "";
+                    let prodJson = encodeURIComponent(JSON.stringify(p));
 
                     if (p.imagensExtras && p.imagensExtras.length > 0) {
                         let todasAsFotos = [imgPrincipal, ...p.imagensExtras];
                         let imgsTags = "";
                         todasAsFotos.forEach(foto => {
-                            imgsTags += `<img src="${foto}" class="product-img">`;
+                            // AQUI ESTÁ A MÁGICA: Ao clicar na foto, abre os detalhes!
+                            imgsTags += `<img src="${foto}" class="product-img" onclick="abrirDetalhes('${prodJson}')">`;
                         });
 
                         galeriaHtml = `
@@ -274,15 +289,13 @@
                             </div>
                         `;
                     } else {
-                        galeriaHtml = `<div class="carousel-container"><img src="${imgPrincipal}" class="product-img"></div>`;
+                        galeriaHtml = `<div class="carousel-container" onclick="abrirDetalhes('${prodJson}')"><img src="${imgPrincipal}" class="product-img"></div>`;
                     }
-
-                    let prodJson = encodeURIComponent(JSON.stringify(p));
 
                     html += `
                         <div class="card">
                             ${galeriaHtml}
-                            <div class="p-info">
+                            <div class="p-info" onclick="abrirDetalhes('${prodJson}')" style="cursor:pointer;">
                                 ${txtCategoria}
                                 <div class="p-nome">${p.nome}</div>
                                 ${precoDisplay}
@@ -299,7 +312,53 @@
         }
 
         // ==========================================
-        // LÓGICA DO MODAL DE CHECKOUT
+        // NOVA LÓGICA: DETALHES EXPANDIDOS (MODAL 1)
+        // ==========================================
+        function abrirDetalhes(prodJsonEncoded) {
+            prodJsonAtual = prodJsonEncoded;
+            let p = JSON.parse(decodeURIComponent(prodJsonEncoded));
+            
+            document.getElementById('det-nome').innerText = p.nome;
+            document.getElementById('det-categoria').innerText = p.categoria || "Produto 3D";
+            document.getElementById('det-desc').innerText = p.descricao || "Peça impressa em 3D de alta qualidade.";
+            
+            let precoVal = isAtacado && p.precoAtacado ? parseFloat(p.precoAtacado) : parseFloat(p.precoVenda);
+            let corPreco = isAtacado ? 'var(--warn)' : 'var(--primary)';
+            document.getElementById('det-preco').innerText = `R$ ${precoVal.toFixed(2)}`;
+            document.getElementById('det-preco').style.color = corPreco;
+            
+            let btnComprar = document.getElementById('btn-det-comprar');
+            btnComprar.style.background = corPreco;
+            btnComprar.style.color = isAtacado ? 'black' : 'white';
+
+            let imgPrincipal = p.imagem || 'https://via.placeholder.com/500?text=Rik+3D';
+            let todasAsFotos = p.imagensExtras && p.imagensExtras.length > 0 ? [imgPrincipal, ...p.imagensExtras] : [imgPrincipal];
+            
+            let galeriaHtml = "";
+            todasAsFotos.forEach(foto => {
+                galeriaHtml += `<img src="${foto}">`;
+            });
+            document.getElementById('detalhes-galeria').innerHTML = galeriaHtml;
+
+            // Dispara evento pro Face saber que ele viu a descrição
+            if(typeof fbq !== 'undefined') {
+                fbq('track', 'ViewContent', { content_name: p.nome, value: precoVal, currency: 'BRL' });
+            }
+
+            document.getElementById('modalDetalhes').style.display = 'flex';
+        }
+
+        function fecharDetalhes() {
+            document.getElementById('modalDetalhes').style.display = 'none';
+        }
+
+        function irDoDetalheProCheckout() {
+            fecharDetalhes();
+            abrirModal(prodJsonAtual);
+        }
+
+        // ==========================================
+        // LÓGICA DO MODAL DE CHECKOUT (MODAL 2)
         // ==========================================
         function buscarCEP(cep) {
             let cepLimpo = cep.replace(/\D/g, '');
@@ -339,10 +398,6 @@
             document.getElementById('chave-pix-copia').value = MINHA_CHAVE_PIX;
             calcularTotal();
             
-            if(typeof fbq !== 'undefined') {
-                fbq('track', 'ViewContent', { content_name: prodSelecionado.nome, value: valorUnitarioAtual, currency: 'BRL' });
-            }
-
             document.getElementById('step-1').className = 'step active';
             document.getElementById('step-2').className = 'step';
             document.getElementById('modalPedido').style.display = 'flex';
