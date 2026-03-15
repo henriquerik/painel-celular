@@ -132,7 +132,7 @@
         <div class="modal-content" style="max-width: 350px;">
             <button onclick="fecharModal('modalLogin')" style="position: absolute; top: 10px; right: 10px; background: transparent; color: #888; border: none; font-size: 20px; cursor: pointer;">&times;</button>
             <h3 style="margin-top:0; color:var(--primary); text-align:center;">👤 Identifique-se</h3>
-            <p style="font-size:12px; color:#aaa; text-align:center; margin-bottom: 20px;">Precisamos do seu e-mail para salvar o seu carrinho e o seu histórico de pedidos.</p>
+            <p style="font-size:12px; color:#aaa; text-align:center; margin-bottom: 20px;">Precisamos do seu e-mail para salvar o seu carrinho e te enviar novidades.</p>
             
             <label>Seu Nome Completo:</label>
             <input type="text" id="login-nome" placeholder="Ex: João da Silva">
@@ -164,7 +164,6 @@
             <button onclick="fecharModal('modalDetalhes')" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 10; display:flex; align-items:center; justify-content:center;">&times;</button>
             
             <div id="detalhes-galeria" class="galeria-detalhes"></div>
-            <div style="text-align:center; padding: 5px; font-size: 10px; color: #888; background: #111;">Deslize para o lado para ver mais fotos ➔</div>
             
             <div style="padding: 20px;">
                 <div id="det-categoria" style="font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 5px;"></div>
@@ -176,7 +175,7 @@
                     <div id="det-desc" style="font-size: 14px; color: #ddd; white-space: pre-wrap; line-height: 1.5; font-family: inherit;"></div>
                 </div>
 
-                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px; border-radius: 8px;" onclick="verificarLoginEAdicionar(prodJsonAtual)">➕ ADICIONAR AO CARRINHO</button>
+                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px;" onclick="verificarLoginEAdicionar(prodJsonAtual)">➕ ADICIONAR AO CARRINHO</button>
             </div>
         </div>
     </div>
@@ -286,6 +285,7 @@
             return false;
         }
 
+        // 🌟 MÁGICA DE CAPTURA DE LEAD:
         function efetuarLogin() {
             let nome = document.getElementById('login-nome').value.trim();
             let email = document.getElementById('login-email').value.trim();
@@ -297,6 +297,20 @@
             
             localStorage.setItem('rik3d_user_nome', nome);
             localStorage.setItem('rik3d_user_email', email);
+
+            // Joga direto pra Nuvem! Se ele não comprar, o Lead tá salvo.
+            let fbKey = localStorage.getItem('rik3d_user_fb_key');
+            if (!fbKey) {
+                let novoCliente = firebase.database().ref('clientes_online').push({
+                    nome: nome,
+                    email: email,
+                    whatsapp: "Apenas Lead (Não finalizou)",
+                    endereco: "Apenas E-mail Capturado",
+                    tipo: isAtacado ? 'Atacado' : 'Varejo',
+                    dataCadastro: new Date().toLocaleString()
+                });
+                localStorage.setItem('rik3d_user_fb_key', novoCliente.key);
+            }
             
             verificarSessao();
             fecharModal('modalLogin');
@@ -311,6 +325,7 @@
         function fazerLogout() {
             localStorage.removeItem('rik3d_user_nome');
             localStorage.removeItem('rik3d_user_email');
+            localStorage.removeItem('rik3d_user_fb_key'); // Remove a chave do banco também
             localStorage.removeItem('rik3d_carrinho');
             location.reload();
         }
@@ -654,8 +669,16 @@
                 lido: false
             };
 
+            // Salva o Pedido
             firebase.database().ref('pedidos_online').push(pedidoDados);
-            firebase.database().ref('clientes_online').push(clienteDados);
+            
+            // ATUALIZA o cliente com o resto dos dados se ele já tinha a Key, ou cria novo
+            let fbKey = localStorage.getItem('rik3d_user_fb_key');
+            if (fbKey) {
+                firebase.database().ref('clientes_online/' + fbKey).update(clienteDados);
+            } else {
+                firebase.database().ref('clientes_online').push(clienteDados);
+            }
 
             if(typeof fbq !== 'undefined') { fbq('track', 'Purchase', { value: valorTotalCarrinho, currency: 'BRL', content_type: 'product' }); }
 
