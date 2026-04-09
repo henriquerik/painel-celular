@@ -32,7 +32,6 @@
         :root { --primary: #007acc; --dark: #121212; --card: #1e1e1e; --warn: #f1c40f; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--dark); color: white; margin: 0; padding-bottom: 50px; }
         
-        /* BARRA SUPERIOR DE LOGIN */
         .top-bar { background: #050505; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; border-bottom: 1px solid #333; }
         .top-bar-link { color: var(--primary); text-decoration: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         .top-bar-link:hover { text-decoration: underline; }
@@ -64,7 +63,6 @@
         .btn-varejo { background: var(--primary); }
         .btn-atacado { background: var(--warn); color: black; }
         
-        /* BOTÃO CARRINHO FLUTUANTE */
         .cart-float { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 50; transition: transform 0.2s; }
         .cart-float:hover { transform: scale(1.1); }
         .cart-badge { position: absolute; top: 0; right: 0; background: #e74c3c; color: white; font-size: 12px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -93,7 +91,6 @@
         .total-destaque { font-size: 24px; color: #25D366; font-weight: bold; margin: 10px 0; }
         label { font-size: 12px; color: #ccc; }
         
-        /* ESTILOS DO HISTÓRICO DE PEDIDOS */
         .historico-item { background: #252525; border-left: 3px solid var(--primary); padding: 10px; margin-bottom: 10px; border-radius: 4px; }
         .hist-data { font-size: 10px; color: #aaa; }
         .hist-prod { font-size: 13px; font-weight: bold; margin: 5px 0; }
@@ -164,6 +161,7 @@
             <button onclick="fecharModal('modalDetalhes')" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 10; display:flex; align-items:center; justify-content:center;">&times;</button>
             
             <div id="detalhes-galeria" class="galeria-detalhes"></div>
+            <div style="text-align:center; padding: 5px; font-size: 10px; color: #888; background: #111;">Deslize para o lado para ver mais fotos ➔</div>
             
             <div style="padding: 20px;">
                 <div id="det-categoria" style="font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 5px;"></div>
@@ -175,7 +173,7 @@
                     <div id="det-desc" style="font-size: 14px; color: #ddd; white-space: pre-wrap; line-height: 1.5; font-family: inherit;"></div>
                 </div>
 
-                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px;" onclick="verificarLoginEAdicionar(prodJsonAtual)">➕ ADICIONAR AO CARRINHO</button>
+                <button class="btn-pedir btn-varejo" id="btn-det-comprar" style="margin-top: 15px; font-size:16px; padding:15px; border-radius: 8px;" onclick="verificarLoginEAdicionar(prodJsonAtual)">➕ ADICIONAR AO CARRINHO</button>
             </div>
         </div>
     </div>
@@ -191,7 +189,7 @@
                     <span style="color:#aaa; font-size: 12px;">Total do Pedido:</span><br>
                     <strong id="carrinho-total-display" style="font-size: 22px; color: var(--primary);">R$ 0,00</strong>
                 </div>
-                <small id="aviso-minimo" style="color:var(--warn); display:none; font-weight:bold; margin-bottom:10px;">Lojista, a quantidade total de peças deve ser no mínimo <span id="qtd-min-val"></span>.</small>
+                <small id="aviso-minimo" style="color:var(--warn); display:none; font-weight:bold; margin-bottom:10px;">Lojista, a quantidade total deve ser no mínimo <span id="qtd-min-val"></span>.</small>
                 
                 <button class="btn-pedir btn-varejo" onclick="irParaCadastro()">FECHAR PEDIDO ➔</button>
                 <button class="btn-pedir" style="background:transparent; color:#888; margin-top:10px; font-size:12px;" onclick="fecharModal('modalPedido')">Continuar Comprando</button>
@@ -270,9 +268,6 @@
         
         let acaoPendenteCart = null; 
 
-        // ==========================================
-        // SISTEMA DE LOGIN E HISTÓRICO INTELIGENTE
-        // ==========================================
         function verificarSessao() {
             let email = localStorage.getItem('rik3d_user_email');
             let nome = localStorage.getItem('rik3d_user_nome');
@@ -285,7 +280,6 @@
             return false;
         }
 
-        // 🌟 MÁGICA DE CAPTURA DE LEAD:
         function efetuarLogin() {
             let nome = document.getElementById('login-nome').value.trim();
             let email = document.getElementById('login-email').value.trim();
@@ -298,7 +292,6 @@
             localStorage.setItem('rik3d_user_nome', nome);
             localStorage.setItem('rik3d_user_email', email);
 
-            // Joga direto pra Nuvem! Se ele não comprar, o Lead tá salvo.
             let fbKey = localStorage.getItem('rik3d_user_fb_key');
             if (!fbKey) {
                 let novoCliente = firebase.database().ref('clientes_online').push({
@@ -325,7 +318,7 @@
         function fazerLogout() {
             localStorage.removeItem('rik3d_user_nome');
             localStorage.removeItem('rik3d_user_email');
-            localStorage.removeItem('rik3d_user_fb_key'); // Remove a chave do banco também
+            localStorage.removeItem('rik3d_user_fb_key');
             localStorage.removeItem('rik3d_carrinho');
             location.reload();
         }
@@ -386,23 +379,37 @@
             }
         }
 
-        // ==========================================
-        // INICIALIZAÇÃO DA VITRINE
-        // ==========================================
         window.onload = () => {
             verificarSessao();
             atualizarBadgeCarrinho();
             if (isAtacado) { document.getElementById('campo-cnpj').style.display = 'block'; }
         };
 
+        // AQUI ESTÁ A CORREÇÃO: "Tradutor" para consertar o banco de dados
         const dbRef = firebase.database().ref('vitrine/produtos');
         dbRef.on('value', (snapshot) => {
-            bancoProdutosGlobal = snapshot.val() || [];
+            let val = snapshot.val();
+            let produtosArray = [];
+            
+            if (val) {
+                // Se for Array normal, puxa. Se for Objeto quebrado, conserta e converte pra Array.
+                if (Array.isArray(val)) {
+                    produtosArray = val;
+                } else {
+                    produtosArray = Object.keys(val).map(key => val[key]);
+                }
+            }
+
+            // Remove itens nulos da lista
+            bancoProdutosGlobal = produtosArray.filter(p => p !== null && p !== undefined);
+            
             let categorias = new Set();
             bancoProdutosGlobal.forEach(p => { if(p && p.categoria) categorias.add(p.categoria); });
+            
             let selectHtml = '<option value="">Todas as Categorias</option>';
             categorias.forEach(c => { selectHtml += `<option value="${c}">${c}</option>`; });
             document.getElementById('categoria-vitrine').innerHTML = selectHtml;
+            
             renderizarVitrine(bancoProdutosGlobal);
         });
 
@@ -459,14 +466,11 @@
                     contadorID++;
                 });
             } else {
-                html = "<p style='text-align:center; grid-column: 1/-1; color: #888; padding: 40px;'>Nenhum produto encontrado na busca.</p>";
+                html = "<p style='text-align:center; grid-column: 1/-1; color: #888; padding: 40px;'>O catálogo está vazio ou carregando imagens.</p>";
             }
             container.innerHTML = html;
         }
 
-        // ==========================================
-        // CARRINHO E CHECKOUT
-        // ==========================================
         function abrirDetalhes(prodJsonEncoded) {
             prodJsonAtual = prodJsonEncoded;
             let p = JSON.parse(decodeURIComponent(prodJsonEncoded));
@@ -611,7 +615,6 @@
         }
 
         function irParaPagamento() {
-            const nome = document.getElementById('c-nome').value.trim();
             const whats = document.getElementById('c-whats').value.trim();
             const cep = document.getElementById('c-cep').value.trim();
             const rua = document.getElementById('c-rua').value.trim();
@@ -669,10 +672,8 @@
                 lido: false
             };
 
-            // Salva o Pedido
             firebase.database().ref('pedidos_online').push(pedidoDados);
             
-            // ATUALIZA o cliente com o resto dos dados se ele já tinha a Key, ou cria novo
             let fbKey = localStorage.getItem('rik3d_user_fb_key');
             if (fbKey) {
                 firebase.database().ref('clientes_online/' + fbKey).update(clienteDados);
