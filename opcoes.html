@@ -21,7 +21,7 @@
             <p style="font-size:12px; color:#858585;">Seu usuário do GitHub (necessário para gerar os links na aba Divulgar).</p>
             <label>Usuário GitHub:</label>
             <input type="text" id="cfg-github-user" placeholder="Ex: rik3dstudio">
-            <button class="btn-salvar" onclick="salvarGithub()" style="margin-top:15px; width:100%;">💾 ATUALIZAR LINKS DE VENDA</button>
+            <button class="btn-salvar" onclick="salvarConfigGithub()" style="margin-top:15px; width:100%;">💾 ATUALIZAR LINKS DE VENDA</button>
         </div>
 
         <div class="config-card">
@@ -66,14 +66,25 @@
         window.onload = function() {
             carregarBanco();
             construirMenu('opcoes');
-            document.getElementById('cfg-github-user').value = db.configGlobal?.githubUser || "";
+            
+            // Corrige a leitura do objeto de configuração global
+            if (!db.configGlobal) db.configGlobal = {};
+            document.getElementById('cfg-github-user').value = db.configGlobal.githubUser || "";
         };
 
-        function salvarGithub() {
+        // CORREÇÃO: Função renomeada para não dar conflito e forçar a gravação certa
+        function salvarConfigGithub() {
             if (!db.configGlobal) db.configGlobal = {};
-            db.configGlobal.githubUser = document.getElementById('cfg-github-user').value.trim();
+            let user = document.getElementById('cfg-github-user').value.trim();
+            
+            if(!user) {
+                alert("Por favor, digite o seu usuário do GitHub!");
+                return;
+            }
+            
+            db.configGlobal.githubUser = user;
             salvarBanco();
-            mostrarToast("Usuário GitHub salvo!");
+            mostrarToast("Usuário GitHub salvo com sucesso!");
         }
 
         function mudarCor(cor) {
