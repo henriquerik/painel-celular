@@ -13,7 +13,12 @@
 
         .color-indicator { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-left: 5px; border: 1px solid #555; vertical-align: middle; }
         .vitrine-img-mini { width: 70px; height: 70px; object-fit: cover; border-radius: 4px; background: var(--input); border: 1px solid var(--border); }
-        .card-flex { display: flex; gap: 15px; align-items: flex-start; }
+        
+        /* Ajustes para o Sistema de Grid Dinâmico */
+        #listaProdutos { display: grid; grid-template-columns: 1fr; gap: 15px; align-items: stretch; }
+        .card-item { margin-top: 0 !important; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+        .card-flex { display: flex; gap: 15px; align-items: flex-start; flex-wrap: wrap; }
+        
         .p-categoria { font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 3px; }
     </style>
 </head>
@@ -31,23 +36,39 @@
             <input type="text" id="filtro-nome" class="busca-input" placeholder="🔍 Procurar produto pelo nome..." oninput="renderCatalogo()">
             <select id="filtro-categoria" class="categoria-select" onchange="renderCatalogo()">
                 <option value="">Todas as Categorias</option>
-                </select>
+            </select>
+            <select id="filtro-colunas" class="categoria-select" style="flex: 0.5; min-width: 120px;" onchange="mudarGrid()">
+                <option value="1">1 por linha</option>
+                <option value="2">2 por linha</option>
+                <option value="3">3 por linha</option>
+                <option value="4">4 por linha</option>
+            </select>
         </div>
         
         <div id="listaProdutos"></div>
     </div>
 
-    <script src="banco.js"></script>
-    
     <script>
         // Quando a página abre
         window.onload = function() {
             carregarBanco();
             construirMenu('catalogo');
             
+            // Carrega a preferência de colunas do usuário salva na memória
+            var colunasSalvas = localStorage.getItem('rik3d_grid_catalogo') || "1";
+            document.getElementById('filtro-colunas').value = colunasSalvas;
+            mudarGrid();
+            
             // Renderiza após um pequeno delay para garantir que o banco carregou da nuvem
             setTimeout(renderCatalogo, 500);
         };
+
+        // Função para mudar a quantidade de colunas na tela
+        function mudarGrid() {
+            var colunas = document.getElementById('filtro-colunas').value;
+            document.getElementById('listaProdutos').style.gridTemplateColumns = `repeat(${colunas}, 1fr)`;
+            localStorage.setItem('rik3d_grid_catalogo', colunas); // Salva para não esquecer ao atualizar a página
+        }
 
         // ==========================================
         // RENDERIZAR A LISTA DE PRODUTOS E FILTROS
@@ -59,13 +80,19 @@
                 // 1. ATUALIZA O MENU DE CATEGORIAS
                 let categorias = new Set();
                 db.produtos.forEach(p => {
-                    if(p && p.categoria) categorias.add(p.categoria);
+                    // Separa as múltiplas categorias para o filtro funcionar certinho
+                    if(p && p.categoria) {
+                        p.categoria.split(',').forEach(c => {
+                            let limpa = c.trim();
+                            if(limpa) categorias.add(limpa);
+                        });
+                    }
                 });
                 
                 let selectHtml = '<option value="">Todas as Categorias</option>';
                 let catAtual = document.getElementById('filtro-categoria').value; // Guarda o que estava selecionado
                 
-                categorias.forEach(c => {
+                Array.from(categorias).sort().forEach(c => {
                     selectHtml += `<option value="${c}" ${catAtual === c ? 'selected' : ''}>${c}</option>`;
                 });
                 document.getElementById('filtro-categoria').innerHTML = selectHtml;
@@ -83,7 +110,10 @@
                     
                     // Lógica do filtro
                     var matchNome = String(p.nome || "").toLowerCase().includes(busca);
-                    var matchCategoria = catSelecionada === "" || p.categoria === catSelecionada;
+                    
+                    // Verifica se a categoria escolhida está na lista do produto
+                    let catsDoProduto = p.categoria ? p.categoria.split(',').map(c => c.trim()) : [];
+                    let matchCategoria = catSelecionada === "" || catsDoProduto.includes(catSelecionada);
                     
                     if (matchNome && matchCategoria) {
                         var pVenda = parseFloat(p.precoVenda) || 0; 
@@ -124,47 +154,52 @@
                         }
                         if (coresHTML !== "") { coresHTML = `<div style="margin:5px 0;">${coresHTML}</div>`; }
 
-                        var imgHTML = p.imagem ? `<img src="${p.imagem}" class="vitrine-img-mini">` : `<div class="vitrine-img-mini" style="display:flex; align-items:center; justify-content:center; font-size:10px; color:#555;">Sem Foto</div>`;
-                        var txtCategoria = p.categoria ? `<div class="p-categoria">${p.categoria}</div>` : '';
+                        var imgHTML = p.imagem ? `<img src="${p.imagem}" class="vitrine-img-mini">` : `<div class="vitrine-img-mini" style="display:flex; align-items:center; justify-content:center; font-size:10px; color:#555; text-align:center;">Sem Foto</div>`;
+                        
+                        // Transforma as categorias em etiquetas visuais
+                        let txtCategoria = '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:5px;">';
+                        catsDoProduto.forEach(cat => { if(cat) txtCategoria += `<span class="p-categoria">${cat}</span>`; });
+                        txtCategoria += '</div>';
 
                         htmlProd += `
                         <div class="card-item">
                             <div class="card-flex">
                                 ${imgHTML}
-                                <div style="flex: 1;">
-                                    <div style="display:flex; justify-content:space-between">
+                                <div style="flex: 1; min-width: 150px;">
+                                    <div style="display:flex; justify-content:space-between; align-items: flex-start; gap: 5px;">
                                         <div>
                                             ${txtCategoria}
-                                            <b style="font-size:1.2em;">${p.nome || "Sem Nome"}</b>
+                                            <b style="font-size:1.2em; display:block; line-height:1.2;">${p.nome || "Sem Nome"}</b>
                                         </div>
-                                        <div>
-                                            <button class="btn-edit" onclick="editarProduto(${p.id})">✏️</button>
-                                            <button class="btn-del" onclick="apagarProduto(${p.id})">X</button>
+                                        <div style="display:flex; gap:5px;">
+                                            <button class="btn-edit" style="padding:5px;" onclick="editarProduto(${p.id})">✏️</button>
+                                            <button class="btn-del" style="padding:5px;" onclick="apagarProduto(${p.id})">X</button>
                                         </div>
                                     </div>
                                     ${coresHTML}
                                     <div style="color:var(--primary); font-weight:bold; margin-top:5px;">
                                         Varejo: R$ ${pVenda.toFixed(2)} | Atacado: R$ ${pAtacado.toFixed(2)} <small>(+${qAtacado} un)</small>
                                     </div>
-                                    <div style="color:#858585; font-size:0.9em;">Custo de Fabricação: R$ ${pCusto.toFixed(2)}</div>
+                                    <div style="color:#858585; font-size:0.9em;">Custo Fabricação: R$ ${pCusto.toFixed(2)}</div>
                                 </div>
                             </div>
+                            
                             <div style="margin:12px 0; background:var(--bg); padding:10px; border-radius:4px; font-weight:bold; border: 1px solid var(--border);">
-                                Estoque no Seu Box (Físico): <span style="color: ${emBox > 0 ? 'var(--primary)' : 'var(--danger)'}; font-size:1.2em;">${emBox} un.</span><br>
-                                Em Consignação (Lojas): <span style="color:var(--warn);">${consignadoGlobal} un.</span><br>
+                                Estoque no Box: <span style="color: ${emBox > 0 ? 'var(--primary)' : 'var(--danger)'}; font-size:1.2em;">${emBox} un.</span><br>
+                                Em Consignação: <span style="color:var(--warn);">${consignadoGlobal} un.</span><br>
                                 <span style="color:#858585; font-size:0.9em; font-weight:normal;">Total Fabricado na Vida: ${pFeito}</span>
                             </div>
                             
-                            <div style="display:flex; gap:5px; align-items:center;">
-                                <input type="number" id="qtd-acao-${p.id}" value="1" style="width:70px; margin-bottom:0;">
-                                <button class="btn-salvar" style="padding:10px; margin:0; flex:1;" onclick="gerenciarVendaCatalogo(${p.id},'prod')">🖨️ IMPRIMIR</button>
-                                <button class="btn-salvar" style="padding:10px; background:var(--warn); color:#000; margin:0; flex:1;" onclick="gerenciarVendaCatalogo(${p.id},'vend')">💰 VENDER RÁPIDO</button>
+                            <div style="display:flex; gap:5px; align-items:center; flex-wrap: wrap; margin-top: auto;">
+                                <input type="number" id="qtd-acao-${p.id}" value="1" style="width:60px; margin-bottom:0; flex: 0.3;">
+                                <button class="btn-salvar" style="padding:10px; margin:0; flex:1; font-size:11px;" onclick="gerenciarVendaCatalogo(${p.id},'prod')">🖨️ IMPRIMIR</button>
+                                <button class="btn-salvar" style="padding:10px; background:var(--warn); color:#000; margin:0; flex:1; font-size:11px;" onclick="gerenciarVendaCatalogo(${p.id},'vend')">💰 VENDER</button>
                             </div>
                         </div>`;
                     }
                 }
                 
-                if (htmlProd === "") htmlProd = "<p style='text-align:center; color:#858585; padding:40px;'>Nenhum produto encontrado com estes filtros.</p>";
+                if (htmlProd === "") htmlProd = "<p style='text-align:center; color:#858585; padding:40px; grid-column: 1/-1;'>Nenhum produto encontrado com estes filtros.</p>";
                 document.getElementById('listaProdutos').innerHTML = htmlProd;
 
             } catch(e) { console.error("Erro renderCatalogo:", e); }
