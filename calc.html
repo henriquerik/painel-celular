@@ -47,25 +47,37 @@
 
         <label style="margin-top: 15px; display: block; font-weight: bold; color: var(--primary);">Galeria de Fotos do Produto</label>
         <div class="galeria-grid">
-            <div class="img-input-area" style="border-color: var(--primary);">
-                <span id="p-img-text-0">📸 FOTO PRINCIPAL</span>
-                <input type="file" id="p-img-file-0" accept="image/*" onchange="previewImage(this, 0)">
-                <img id="p-img-prev-0" class="img-area-preview">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div class="img-input-area" style="border-color: var(--primary);">
+                    <span id="p-img-text-0">📸 FOTO PRINCIPAL</span>
+                    <input type="file" id="p-img-file-0" accept="image/*" onchange="previewImage(this, 0)">
+                    <img id="p-img-prev-0" class="img-area-preview">
+                </div>
+                <button class="btn-limpar" style="padding:4px; font-size:10px;" onclick="addLinkImagem(0)">🔗 USAR LINK</button>
             </div>
-            <div class="img-input-area">
-                <span id="p-img-text-1">➕ FOTO EXTRA 1</span>
-                <input type="file" id="p-img-file-1" accept="image/*" onchange="previewImage(this, 1)">
-                <img id="p-img-prev-1" class="img-area-preview">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div class="img-input-area">
+                    <span id="p-img-text-1">➕ FOTO EXTRA 1</span>
+                    <input type="file" id="p-img-file-1" accept="image/*" onchange="previewImage(this, 1)">
+                    <img id="p-img-prev-1" class="img-area-preview">
+                </div>
+                <button class="btn-limpar" style="padding:4px; font-size:10px;" onclick="addLinkImagem(1)">🔗 USAR LINK</button>
             </div>
-            <div class="img-input-area">
-                <span id="p-img-text-2">➕ FOTO EXTRA 2</span>
-                <input type="file" id="p-img-file-2" accept="image/*" onchange="previewImage(this, 2)">
-                <img id="p-img-prev-2" class="img-area-preview">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div class="img-input-area">
+                    <span id="p-img-text-2">➕ FOTO EXTRA 2</span>
+                    <input type="file" id="p-img-file-2" accept="image/*" onchange="previewImage(this, 2)">
+                    <img id="p-img-prev-2" class="img-area-preview">
+                </div>
+                <button class="btn-limpar" style="padding:4px; font-size:10px;" onclick="addLinkImagem(2)">🔗 USAR LINK</button>
             </div>
-            <div class="img-input-area">
-                <span id="p-img-text-3">➕ FOTO EXTRA 3</span>
-                <input type="file" id="p-img-file-3" accept="image/*" onchange="previewImage(this, 3)">
-                <img id="p-img-prev-3" class="img-area-preview">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div class="img-input-area">
+                    <span id="p-img-text-3">➕ FOTO EXTRA 3</span>
+                    <input type="file" id="p-img-file-3" accept="image/*" onchange="previewImage(this, 3)">
+                    <img id="p-img-prev-3" class="img-area-preview">
+                </div>
+                <button class="btn-limpar" style="padding:4px; font-size:10px;" onclick="addLinkImagem(3)">🔗 USAR LINK</button>
             </div>
         </div>
         <fieldset style="border: 1px solid var(--border); border-radius: 4px; margin-top: 15px; padding: 15px;">
@@ -168,7 +180,7 @@
             renderCategoriasRapidas(); 
         }
 
-        // LEITOR TEXTO DO FATIADOR (Mantido igual)
+        // LEITOR TEXTO DO FATIADOR 
         function processarTextoFatiador(text) {
             if (!text) return;
             var statusEl = document.getElementById('ocr-status');
@@ -193,7 +205,7 @@
             }
         }
 
-        // GESTÃO DE ESTOQUE / AMS (Mantido igual)
+        // GESTÃO DE ESTOQUE / AMS 
         function addSlotAMS() {
             try {
                 if(slotsAmsCount >= 10) return;
@@ -225,7 +237,7 @@
             } catch(e) {}
         }
 
-        // CÁLCULO MÁGICO (Mantido igual)
+        // CÁLCULO MÁGICO 
         function calc() {
             try {
                 var custoPlasticoTotal = 0;
@@ -331,7 +343,7 @@
         }
 
         // ==========================================
-        // NOVA LÓGICA DE MÚLTIPLAS IMAGENS
+        // LÓGICA DE MÚLTIPLAS IMAGENS
         // ==========================================
         function previewImage(input, index) {
             if (input.files && input.files[0]) {
@@ -343,16 +355,34 @@
                         if (width > height) { if (width > MAX) { height *= MAX / width; width = MAX; } } else { if (height > MAX) { width *= MAX / height; height = MAX; } }
                         canvas.width = width; canvas.height = height; var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
                         
-                        // Salva no array na posição correta
                         imgGaleria[index] = canvas.toDataURL('image/jpeg', 0.6); 
                         
-                        // Atualiza visual
                         var pv = document.getElementById('p-img-prev-' + index); if(pv) { pv.src = imgGaleria[index]; pv.style.display='block'; }
                         var pt = document.getElementById('p-img-text-' + index); if(pt) { pt.style.display='none'; }
                     }; 
                     img.src = e.target.result;
                 }; 
                 reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // NOVA FUNÇÃO: ADICIONAR IMAGEM POR LINK
+        function addLinkImagem(index) {
+            var url = prompt("Cole o link (URL) da imagem hospedada na internet:\nExemplo: https://meusite.com/foto.png");
+            
+            if (url && (url.startsWith("http://") || url.startsWith("https://"))) {
+                imgGaleria[index] = url; // Salva o link direto na galeria
+                
+                // Atualiza o visual para mostrar a foto puxada do link
+                var pv = document.getElementById('p-img-prev-' + index); 
+                var pt = document.getElementById('p-img-text-' + index); 
+                
+                if(pv) { pv.src = url; pv.style.display = 'block'; }
+                if(pt) { pt.style.display = 'none'; }
+                
+                mostrarToast("Imagem adicionada por link!");
+            } else if (url) {
+                alert("⚠️ Erro: O link precisa ser uma URL válida começando com 'http://' ou 'https://'");
             }
         }
 
@@ -485,4 +515,3 @@
     </script>
 </body>
 </html>
-
