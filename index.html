@@ -53,7 +53,10 @@
         .product-img { flex: 0 0 100%; width: 100%; height: 160px; object-fit: cover; }
         
         .p-info { padding: 12px; flex-grow: 1; }
-        .p-categoria { font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 3px; }
+        
+        /* Nova classe para as Múltiplas Categorias */
+        .cat-tag { font-size: 9px; background: rgba(0,122,204,0.15); color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; display: inline-block; }
+        
         .p-nome { font-weight: bold; font-size: 14px; color: #eee; height: 34px; overflow: hidden; }
         .p-preco { font-size: 20px; font-weight: bold; margin-top: 5px; }
         .preco-varejo { color: var(--primary); }
@@ -195,7 +198,7 @@
             </div>
             
             <div style="padding: 20px;">
-                <div id="det-categoria" style="font-size: 10px; color: var(--primary); text-transform: uppercase; font-weight: bold; margin-bottom: 5px;"></div>
+                <div id="det-categoria" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:5px;"></div>
                 <h2 id="det-nome" style="margin-top: 0; color: white; font-size: 20px; margin-bottom: 5px;">Nome</h2>
                 <div id="det-preco" style="font-size: 24px; font-weight: bold; color: var(--primary);">R$ 0,00</div>
                 
@@ -414,7 +417,7 @@
         }
 
         // ==========================================
-        // INICIALIZAÇÃO DA VITRINE
+        // INICIALIZAÇÃO DA VITRINE E CATEGORIAS
         // ==========================================
         window.onload = () => {
             verificarSessao();
@@ -426,9 +429,21 @@
         dbRef.on('value', (snapshot) => {
             bancoProdutosGlobal = snapshot.val() || [];
             let categorias = new Set();
-            bancoProdutosGlobal.forEach(p => { if(p && p.categoria) categorias.add(p.categoria); });
+            
+            // Lógica atualizada para quebrar por vírgula
+            bancoProdutosGlobal.forEach(p => { 
+                if(p && p.categoria) {
+                    p.categoria.split(',').forEach(c => {
+                        let limpa = c.trim();
+                        if(limpa) categorias.add(limpa);
+                    });
+                } 
+            });
+
             let selectHtml = '<option value="">Todas as Categorias</option>';
-            categorias.forEach(c => { selectHtml += `<option value="${c}">${c}</option>`; });
+            Array.from(categorias).sort().forEach(c => { 
+                selectHtml += `<option value="${c}">${c}</option>`; 
+            });
             document.getElementById('categoria-vitrine').innerHTML = selectHtml;
             renderizarVitrine(bancoProdutosGlobal);
         });
@@ -439,7 +454,11 @@
             let produtosFiltrados = bancoProdutosGlobal.filter(p => {
                 if(!p || !p.precoVenda) return false;
                 let matchNome = p.nome.toLowerCase().includes(textoBusca);
-                let matchCategoria = catSelecionada === "" || p.categoria === catSelecionada;
+                
+                // Lógica de Filtro Múltiplo
+                let catsDoProduto = p.categoria ? p.categoria.split(',').map(c => c.trim()) : [];
+                let matchCategoria = catSelecionada === "" || catsDoProduto.includes(catSelecionada);
+                
                 return matchNome && matchCategoria;
             });
             renderizarVitrine(produtosFiltrados);
@@ -467,7 +486,13 @@
                     }
 
                     let imgPrincipal = p.imagem || 'https://via.placeholder.com/200?text=Rik+3D';
-                    let txtCategoria = p.categoria ? `<div class="p-categoria">${p.categoria}</div>` : '';
+                    
+                    // Transforma "Geek, Colecionável" em botões azuis bonitinhos
+                    let catsArray = p.categoria ? p.categoria.split(',').map(c => c.trim()) : [];
+                    let txtCategoria = '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:3px;">';
+                    catsArray.forEach(cat => { if(cat) txtCategoria += `<span class="cat-tag">${cat}</span>`; });
+                    txtCategoria += '</div>';
+
                     let prodJson = encodeURIComponent(JSON.stringify(p));
 
                     html += `
@@ -499,7 +524,6 @@
             let p = JSON.parse(decodeURIComponent(prodJsonEncoded));
             
             document.getElementById('det-nome').innerText = p.nome;
-            document.getElementById('det-categoria').innerText = p.categoria || "Produto 3D";
             document.getElementById('det-desc').innerText = p.descricao || "Peça impressa em 3D de alta qualidade.";
             
             let precoVal = isAtacado && p.precoAtacado ? parseFloat(p.precoAtacado) : parseFloat(p.precoVenda);
@@ -511,6 +535,12 @@
             btnComprar.style.background = corPreco;
             btnComprar.style.color = isAtacado ? 'black' : 'white';
 
+            // Coloca as categorias no Modal também
+            let catsArray = p.categoria ? p.categoria.split(',').map(c => c.trim()) : [];
+            let tagsHtml = "";
+            catsArray.forEach(cat => { if(cat) tagsHtml += `<span class="cat-tag">${cat}</span>`; });
+            document.getElementById('det-categoria').innerHTML = tagsHtml;
+
             let imgPrincipal = p.imagem || 'https://via.placeholder.com/500?text=Rik+3D';
             let todasAsFotos = p.imagensExtras && p.imagensExtras.length > 0 ? [imgPrincipal, ...p.imagensExtras] : [imgPrincipal];
             
@@ -518,7 +548,6 @@
             todasAsFotos.forEach(foto => { galeriaHtml += `<img src="${foto}">`; });
             document.getElementById('detalhes-galeria').innerHTML = galeriaHtml;
 
-            // NOVA LÓGICA PARA AS SETAS
             let temVariasFotos = todasAsFotos.length > 1;
             document.getElementById('seta-esq').style.display = temVariasFotos ? 'flex' : 'none';
             document.getElementById('seta-dir').style.display = temVariasFotos ? 'flex' : 'none';

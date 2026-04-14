@@ -34,7 +34,7 @@
 
         <div class="grid-2">
             <div><label>Nome do Produto:</label><input type="text" id="p-nome" placeholder="Ex: Vaso Groot"></div>
-            <div><label>Categoria:</label><input type="text" id="p-categoria" placeholder="Ex: Geek"></div>
+            <div><label>Categoria:</label><input type="text" id="p-categoria" placeholder="Ex: Geek, Decoração"></div>
         </div>
         
         <div id="tags-categorias-rapidas" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;"></div>
@@ -366,14 +366,12 @@
             }
         }
 
-        // NOVA FUNÇÃO: ADICIONAR IMAGEM POR LINK
         function addLinkImagem(index) {
             var url = prompt("Cole o link (URL) da imagem hospedada na internet:\nExemplo: https://meusite.com/foto.png");
             
             if (url && (url.startsWith("http://") || url.startsWith("https://"))) {
-                imgGaleria[index] = url; // Salva o link direto na galeria
+                imgGaleria[index] = url;
                 
-                // Atualiza o visual para mostrar a foto puxada do link
                 var pv = document.getElementById('p-img-prev-' + index); 
                 var pt = document.getElementById('p-img-text-' + index); 
                 
@@ -386,12 +384,22 @@
             }
         }
 
+        // ==========================================
+        // LÓGICA DE MÚLTIPLAS CATEGORIAS 
+        // ==========================================
         function renderCategoriasRapidas() {
             try {
                 var categoriasUnicas = [];
                 for (var i = 0; i < db.produtos.length; i++) {
-                    var p = db.produtos[i]; var pCat = String(p.categoria || "Geral").trim();
-                    if (pCat && !categoriasUnicas.includes(pCat)) { categoriasUnicas.push(pCat); }
+                    var p = db.produtos[i]; 
+                    if (p && p.categoria) {
+                        p.categoria.split(',').forEach(c => {
+                            let catLimpa = c.trim();
+                            if (catLimpa && !categoriasUnicas.includes(catLimpa)) {
+                                categoriasUnicas.push(catLimpa);
+                            }
+                        });
+                    }
                 }
                 var html = "";
                 for (var j = 0; j < categoriasUnicas.length; j++) {
@@ -401,7 +409,20 @@
             } catch(e) {}
         }
         
-        function selecionarCategoriaRapida(cat) { safeSet('p-categoria', cat); }
+        function selecionarCategoriaRapida(cat) { 
+            var campo = document.getElementById('p-categoria');
+            if (!campo) return;
+            var valorAtual = campo.value.trim();
+            
+            if (valorAtual === "") {
+                campo.value = cat;
+            } else {
+                var categoriasAdicionadas = valorAtual.split(',').map(c => c.trim());
+                if (!categoriasAdicionadas.includes(cat)) {
+                    campo.value = valorAtual + ", " + cat;
+                }
+            }
+        }
 
         function gerarDescricaoBasica() {
             var nome = document.getElementById('p-nome').value; var cat = document.getElementById('p-categoria').value || "3D"; var preco = document.getElementById('venda-text').value;
@@ -428,7 +449,6 @@
                     if (sel.value != "0" && p > 0) { mats.push({ filId: sel.value, peso: (p / qtdPlateOriginal) }); }
                 }
 
-                // Salva a Principal e cria o Array de Extras (ignorando as caixas vazias)
                 var imgPrincipal = imgGaleria[0];
                 var fotosExtrasArray = [imgGaleria[1], imgGaleria[2], imgGaleria[3]].filter(img => img !== "");
 
@@ -437,7 +457,6 @@
                 if (idEdit) {
                     var idx = db.produtos.findIndex(function(p) { return String(p.id) === String(idEdit); });
                     if (idx > -1) { 
-                        // Se o usuário não trocou a principal, mantém a velha
                         prodObj.imagem = imgPrincipal || db.produtos[idx].imagem; 
                         db.produtos[idx] = { ...db.produtos[idx], ...prodObj }; 
                     }
@@ -459,7 +478,6 @@
                 limparCalc();
                 safeSet('edit-prod-id', p.id); safeSet('p-nome', p.nome || ""); safeSet('p-categoria', p.categoria || ""); safeSet('p-desc', p.descricao || ""); safeSet('tempo', p.tempoImp); safeSet('tempo-manual', p.tempoMan); safeSet('lucro', p.percLucro); safeSet('lucro-atacado', p.percLucroA); safeSet('custo-extra', p.custoExtra); safeSet('qtd-plate', p.qtdPlateOriginal || 1); safeSet('qtd-min-atacado', p.qtdAtacado);
 
-                // Carrega as imagens antigas para o visual novo
                 imgGaleria[0] = p.imagem || "";
                 imgGaleria[1] = (p.imagensExtras && p.imagensExtras[0]) ? p.imagensExtras[0] : "";
                 imgGaleria[2] = (p.imagensExtras && p.imagensExtras[1]) ? p.imagensExtras[1] : "";
@@ -500,7 +518,6 @@
             document.getElementById('venda-text').dataset.manual = "";
             document.getElementById('atacado-text').dataset.manual = "";
             
-            // Limpa as 4 fotos
             imgGaleria = ["", "", "", ""];
             for(let i=0; i<4; i++) {
                 var pv = document.getElementById('p-img-prev-' + i); if (pv) { pv.src = ""; pv.style.display = 'none'; }
