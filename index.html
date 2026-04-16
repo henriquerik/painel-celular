@@ -32,7 +32,6 @@
         :root { --primary: #007acc; --dark: #121212; --card: #1e1e1e; --warn: #f1c40f; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--dark); color: white; margin: 0; padding-bottom: 50px; }
         
-        /* BARRA SUPERIOR DE LOGIN */
         .top-bar { background: #050505; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; border-bottom: 1px solid #333; }
         .top-bar-link { color: var(--primary); text-decoration: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         .top-bar-link:hover { text-decoration: underline; }
@@ -45,16 +44,37 @@
         .categoria-select { flex: 1; min-width: 150px; cursor: pointer; }
 
         .vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 0 15px 15px 15px; max-width: 1200px; margin: 0 auto; }
-        .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #333; display: flex; flex-direction: column; transition: transform 0.2s; }
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #333; display: flex; flex-direction: column; transition: transform 0.2s; position: relative; }
         .card:hover { border-color: var(--primary); }
         
         .carousel-container { position: relative; width: 100%; height: 160px; overflow: hidden; background: #252525; cursor: pointer; }
         .carousel-images { display: flex; height: 100%; transition: transform 0.3s ease-in-out; }
         .product-img { flex: 0 0 100%; width: 100%; height: 160px; object-fit: cover; }
         
+        /* NOVO BOTÃO FLUTUANTE NA FOTO */
+        .btn-add-foto {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            transition: transform 0.2s, background 0.2s;
+        }
+        .btn-add-foto:hover { transform: scale(1.1); background: #0099ff; }
+
         .p-info { padding: 12px; flex-grow: 1; }
         
-        /* Nova classe para as Múltiplas Categorias */
         .cat-tag { font-size: 9px; background: rgba(0,122,204,0.15); color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; display: inline-block; }
         
         .p-nome { font-weight: bold; font-size: 14px; color: #eee; height: 34px; overflow: hidden; }
@@ -67,7 +87,6 @@
         .btn-varejo { background: var(--primary); }
         .btn-atacado { background: var(--warn); color: black; }
         
-        /* BOTÃO CARRINHO FLUTUANTE */
         .cart-float { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 50; transition: transform 0.2s; }
         .cart-float:hover { transform: scale(1.1); }
         .cart-badge { position: absolute; top: 0; right: 0; background: #e74c3c; color: white; font-size: 12px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -78,28 +97,13 @@
         .galeria-detalhes { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; height: 300px; background: #050505; scroll-behavior: smooth; }
         .galeria-detalhes img { flex: 0 0 100%; height: 100%; object-fit: contain; scroll-snap-align: start; }
 
-        /* Oculta a barra de rolagem */
         .galeria-detalhes::-webkit-scrollbar { display: none; }
         .galeria-detalhes { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Estilo das Setas do Carrossel */
         .btn-seta {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            font-size: 18px;
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.3s;
+            position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.6); color: white;
+            border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; z-index: 10;
+            display: flex; align-items: center; justify-content: center; transition: background 0.3s;
         }
         .btn-seta:hover { background: var(--primary); }
         .btn-seta-esq { left: 10px; }
@@ -121,7 +125,6 @@
         .total-destaque { font-size: 24px; color: #25D366; font-weight: bold; margin: 10px 0; }
         label { font-size: 12px; color: #ccc; }
         
-        /* ESTILOS DO HISTÓRICO DE PEDIDOS */
         .historico-item { background: #252525; border-left: 3px solid var(--primary); padding: 10px; margin-bottom: 10px; border-radius: 4px; }
         .hist-data { font-size: 10px; color: #aaa; }
         .hist-prod { font-size: 13px; font-weight: bold; margin: 5px 0; }
@@ -259,26 +262,24 @@
                     </div>
                 </div>
 
-                <button class="btn-pedir btn-varejo" style="margin-top:20px;" onclick="irParaPagamento()">IR PARA O PIX ➔</button>
+                <button class="btn-pedir btn-varejo" style="margin-top:20px;" onclick="irParaPagamento()">IR PARA A CONFIRMAÇÃO ➔</button>
                 <button class="btn-pedir" style="background:#444; margin-top:10px;" onclick="mudarPasso('step-0')">⬅ Voltar ao Carrinho</button>
             </div>
 
             <div id="step-2" class="step">
-                <h3 style="margin-top:0; color:#25D366;">Pagamento via PIX</h3>
-                <div class="pix-box">
-                    <div style="font-size:12px; color:#aaa;">Valor Total</div>
+                <h3 style="margin-top:0; color:#25D366;">Finalizar Pedido</h3>
+                <div class="pix-box" style="border-color: #25D366;">
+                    <div style="font-size:14px; color:#ddd; margin-bottom: 15px;">Para sua segurança e um melhor atendimento, vamos concluir o pedido e combinar a forma de pagamento diretamente pelo WhatsApp.</div>
+                    <div style="font-size:12px; color:#aaa;">Valor Total do Pedido:</div>
                     <div class="total-destaque" id="pix-valor">R$ 0,00</div>
-                    <div style="font-size:12px; color:#aaa; margin-top:10px;">Chave PIX (Copie abaixo)</div>
-                    <input type="text" id="chave-pix-copia" readonly style="text-align:center; font-weight:bold; font-size:16px; color:var(--primary); margin-top:5px;">
-                    <button onclick="copiarPix()" style="background:#333; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; width:100%; margin-top:5px; font-weight:bold;">📋 COPIAR CHAVE PIX</button>
                 </div>
-                <button class="btn-pedir" style="background:#25D366; margin-top:10px;" onclick="finalizarPedido()">✅ JÁ PAGUEI / ENVIAR COMPROVANTE</button>
+                <button class="btn-pedir" style="background:#25D366; margin-top:10px;" onclick="finalizarPedido()">📲 ENVIAR PEDIDO E COMBINAR PAGAMENTO</button>
+                <button class="btn-pedir" style="background:#444; margin-top:10px;" onclick="mudarPasso('step-1')">⬅ Voltar ao Endereço</button>
             </div>
         </div>
     </div>
 
     <script>
-        const MINHA_CHAVE_PIX = "sr.henrique.silva@gmail.com"; 
         const MEU_NUMERO_WHATSAPP = "5511940139671"; 
 
         const firebaseConfig = {
@@ -302,9 +303,6 @@
         
         let acaoPendenteCart = null; 
 
-        // ==========================================
-        // SISTEMA DE LOGIN E HISTÓRICO INTELIGENTE
-        // ==========================================
         function verificarSessao() {
             let email = localStorage.getItem('rik3d_user_email');
             let nome = localStorage.getItem('rik3d_user_nome');
@@ -416,9 +414,6 @@
             }
         }
 
-        // ==========================================
-        // INICIALIZAÇÃO DA VITRINE E CATEGORIAS
-        // ==========================================
         window.onload = () => {
             verificarSessao();
             atualizarBadgeCarrinho();
@@ -430,7 +425,6 @@
             bancoProdutosGlobal = snapshot.val() || [];
             let categorias = new Set();
             
-            // Lógica atualizada para quebrar por vírgula
             bancoProdutosGlobal.forEach(p => { 
                 if(p && p.categoria) {
                     p.categoria.split(',').forEach(c => {
@@ -455,7 +449,6 @@
                 if(!p || !p.precoVenda) return false;
                 let matchNome = p.nome.toLowerCase().includes(textoBusca);
                 
-                // Lógica de Filtro Múltiplo
                 let catsDoProduto = p.categoria ? p.categoria.split(',').map(c => c.trim()) : [];
                 let matchCategoria = catSelecionada === "" || catsDoProduto.includes(catSelecionada);
                 
@@ -487,7 +480,6 @@
 
                     let imgPrincipal = p.imagem || 'https://via.placeholder.com/200?text=Rik+3D';
                     
-                    // Transforma "Geek, Colecionável" em botões azuis bonitinhos
                     let catsArray = p.categoria ? p.categoria.split(',').map(c => c.trim()) : [];
                     let txtCategoria = '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:3px;">';
                     catsArray.forEach(cat => { if(cat) txtCategoria += `<span class="cat-tag">${cat}</span>`; });
@@ -495,10 +487,12 @@
 
                     let prodJson = encodeURIComponent(JSON.stringify(p));
 
+                    // BOTÃO FLUTUANTE ADICIONADO AQUI: onclick="event.stopPropagation();..."
                     html += `
                         <div class="card">
                             <div class="carousel-container" onclick="abrirDetalhes('${prodJson}')">
                                 <img src="${imgPrincipal}" class="product-img">
+                                <button class="btn-add-foto" title="Adicionar ao Carrinho Rápido" onclick="event.stopPropagation(); verificarLoginEAdicionar('${prodJson}')">🛒<span style="font-weight:bold;font-size:12px;margin-left:2px;">+</span></button>
                             </div>
                             <div class="p-info" onclick="abrirDetalhes('${prodJson}')" style="cursor:pointer;">
                                 ${txtCategoria}
@@ -516,9 +510,6 @@
             container.innerHTML = html;
         }
 
-        // ==========================================
-        // CARRINHO E CHECKOUT
-        // ==========================================
         function abrirDetalhes(prodJsonEncoded) {
             prodJsonAtual = prodJsonEncoded;
             let p = JSON.parse(decodeURIComponent(prodJsonEncoded));
@@ -535,7 +526,6 @@
             btnComprar.style.background = corPreco;
             btnComprar.style.color = isAtacado ? 'black' : 'white';
 
-            // Coloca as categorias no Modal também
             let catsArray = p.categoria ? p.categoria.split(',').map(c => c.trim()) : [];
             let tagsHtml = "";
             catsArray.forEach(cat => { if(cat) tagsHtml += `<span class="cat-tag">${cat}</span>`; });
@@ -694,7 +684,6 @@
             }
 
             enderecoFormatadoGlobal = `${rua}, ${num} - ${bairro}. ${cidade}/${uf.toUpperCase()} - CEP: ${cep}`;
-            document.getElementById('chave-pix-copia').value = MINHA_CHAVE_PIX;
             
             if(typeof fbq !== 'undefined') {
                 let numItens = carrinho.reduce((acc, item) => acc + item.qtd, 0);
@@ -703,8 +692,6 @@
 
             mudarPasso('step-2');
         }
-
-        function copiarPix() { const input = document.getElementById('chave-pix-copia'); input.select(); document.execCommand("copy"); alert("Chave copiada!"); }
 
         function finalizarPedido() {
             const clienteDados = {
@@ -748,7 +735,8 @@
 
             if(typeof fbq !== 'undefined') { fbq('track', 'Purchase', { value: valorTotalCarrinho, currency: 'BRL', content_type: 'product' }); }
 
-            let msg = `*NOVO PEDIDO (CARRINHO)* 🛒\n\n*Cliente:* ${clienteDados.nome}\n*E-mail:* ${clienteDados.email}\n*Endereço:* ${clienteDados.endereco}\n\n*Itens:* ${produtosString}\n*Total:* R$ ${valorTotalCarrinho.toFixed(2)}\n\n_Já paguei o PIX, segue comprovante:_`;
+            // MENSAGEM DO WHATSAPP ATUALIZADA
+            let msg = `*NOVO PEDIDO (CARRINHO)* 🛒\n\n*Cliente:* ${clienteDados.nome}\n*E-mail:* ${clienteDados.email}\n*Endereço:* ${clienteDados.endereco}\n\n*Itens:* ${produtosString}\n*Total:* R$ ${valorTotalCarrinho.toFixed(2)}\n\n_Olá! Gostaria de confirmar meu pedido e combinar a forma de pagamento._`;
             const linkWhats = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
             
             carrinho = [];
