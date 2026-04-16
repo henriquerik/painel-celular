@@ -51,7 +51,7 @@
         .carousel-images { display: flex; height: 100%; transition: transform 0.3s ease-in-out; }
         .product-img { flex: 0 0 100%; width: 100%; height: 160px; object-fit: cover; }
         
-        /* NOVO BOTÃO FLUTUANTE NA FOTO */
+        /* BOTÃO FLUTUANTE NA FOTO */
         .btn-add-foto {
             position: absolute;
             bottom: 10px;
@@ -94,7 +94,8 @@
         .modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; overflow-y: auto; }
         .modal-content { background:var(--card); padding:20px; border-radius:10px; width:90%; max-width:400px; border:1px solid #444; margin: 20px 0; max-height: 90vh; overflow-y: auto; position: relative; }
         
-        .galeria-detalhes { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; height: 300px; background: #050505; scroll-behavior: smooth; }
+        /* AUMENTO DA FOTO NOS DETALHES */
+        .galeria-detalhes { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; height: 450px; max-height: 55vh; background: #050505; scroll-behavior: smooth; }
         .galeria-detalhes img { flex: 0 0 100%; height: 100%; object-fit: contain; scroll-snap-align: start; }
 
         .galeria-detalhes::-webkit-scrollbar { display: none; }
@@ -191,13 +192,15 @@
     </div>
 
     <div id="modalDetalhes" class="modal">
-        <div class="modal-content" style="padding: 0; max-width: 450px; overflow: hidden; position: relative;">
-            <button onclick="fecharModal('modalDetalhes')" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 10; display:flex; align-items:center; justify-content:center;">&times;</button>
+        <div class="modal-content" style="padding: 0; max-width: 650px; overflow: hidden; position: relative;">
+            <button onclick="fecharModal('modalDetalhes')" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 20; display:flex; align-items:center; justify-content:center;">&times;</button>
             
             <div style="position: relative;">
                 <button id="seta-esq" class="btn-seta btn-seta-esq" onclick="moverGaleria(-1)">&#10094;</button>
                 <div id="detalhes-galeria" class="galeria-detalhes"></div>
                 <button id="seta-dir" class="btn-seta btn-seta-dir" onclick="moverGaleria(1)">&#10095;</button>
+                
+                <button class="btn-add-foto" style="bottom: 15px; right: 15px; width: 45px; height: 45px; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.8);" title="Adicionar ao Carrinho" onclick="verificarLoginEAdicionar(prodJsonAtual)">🛒<span style="font-weight:bold;font-size:14px;margin-left:2px;">+</span></button>
             </div>
             
             <div style="padding: 20px;">
@@ -487,7 +490,6 @@
 
                     let prodJson = encodeURIComponent(JSON.stringify(p));
 
-                    // BOTÃO FLUTUANTE ADICIONADO AQUI: onclick="event.stopPropagation();..."
                     html += `
                         <div class="card">
                             <div class="carousel-container" onclick="abrirDetalhes('${prodJson}')">
@@ -735,7 +737,6 @@
 
             if(typeof fbq !== 'undefined') { fbq('track', 'Purchase', { value: valorTotalCarrinho, currency: 'BRL', content_type: 'product' }); }
 
-            // MENSAGEM DO WHATSAPP ATUALIZADA
             let msg = `*NOVO PEDIDO (CARRINHO)* 🛒\n\n*Cliente:* ${clienteDados.nome}\n*E-mail:* ${clienteDados.email}\n*Endereço:* ${clienteDados.endereco}\n\n*Itens:* ${produtosString}\n*Total:* R$ ${valorTotalCarrinho.toFixed(2)}\n\n_Olá! Gostaria de confirmar meu pedido e combinar a forma de pagamento._`;
             const linkWhats = `https://wa.me/${MEU_NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
             
