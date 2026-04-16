@@ -51,25 +51,8 @@
         .carousel-images { display: flex; height: 100%; transition: transform 0.3s ease-in-out; }
         .product-img { flex: 0 0 100%; width: 100%; height: 160px; object-fit: cover; }
         
-        /* BOTÃO FLUTUANTE NA FOTO */
         .btn-add-foto {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            font-size: 16px;
-            cursor: pointer;
-            z-index: 5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-            transition: transform 0.2s, background 0.2s;
+            position: absolute; bottom: 10px; right: 10px; background: var(--primary); color: white; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; cursor: pointer; z-index: 5; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: transform 0.2s, background 0.2s;
         }
         .btn-add-foto:hover { transform: scale(1.1); background: #0099ff; }
 
@@ -94,7 +77,6 @@
         .modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; overflow-y: auto; }
         .modal-content { background:var(--card); padding:20px; border-radius:10px; width:90%; max-width:400px; border:1px solid #444; margin: 20px 0; max-height: 90vh; overflow-y: auto; position: relative; }
         
-        /* AUMENTO DA FOTO NOS DETALHES */
         .galeria-detalhes { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; height: 450px; max-height: 55vh; background: #050505; scroll-behavior: smooth; }
         .galeria-detalhes img { flex: 0 0 100%; height: 100%; object-fit: contain; scroll-snap-align: start; }
 
@@ -473,8 +455,10 @@
                     let btnClass = "";
                     
                     if (isAtacado) {
+                        let qAtacado = p.qtdAtacado || 10;
                         precoDisplay = `<div class="badge-atacado">ATACADO</div>
-                                        <div class="p-preco preco-atacado">R$ ${parseFloat(p.precoAtacado).toFixed(2)}</div>`;
+                                        <div class="p-preco preco-atacado">R$ ${parseFloat(p.precoAtacado).toFixed(2)}</div>
+                                        <div style="font-size: 10px; color: #aaa; margin-top: 2px;">Mínimo: ${qAtacado} un.</div>`;
                         btnClass = "btn-atacado";
                     } else {
                         precoDisplay = `<div class="p-preco preco-varejo">R$ ${parseFloat(p.precoVenda).toFixed(2)}</div>`;
@@ -521,7 +505,14 @@
             
             let precoVal = isAtacado && p.precoAtacado ? parseFloat(p.precoAtacado) : parseFloat(p.precoVenda);
             let corPreco = isAtacado ? 'var(--warn)' : 'var(--primary)';
-            document.getElementById('det-preco').innerText = `R$ ${precoVal.toFixed(2)}`;
+            
+            let precoHtml = `R$ ${precoVal.toFixed(2)}`;
+            if (isAtacado) {
+                let qAtacado = p.qtdAtacado || 10;
+                precoHtml += `<div style="font-size:12px; color:#aaa; font-weight:normal; margin-top:5px;">Pedido mínimo: ${qAtacado} peças</div>`;
+            }
+            
+            document.getElementById('det-preco').innerHTML = precoHtml;
             document.getElementById('det-preco').style.color = corPreco;
             
             let btnComprar = document.getElementById('btn-det-comprar');
